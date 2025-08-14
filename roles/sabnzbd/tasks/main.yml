@@ -8,7 +8,7 @@
       with_items:
         - "{{ sabnzbd_data_directory }}"
 
-    - name: Sabnzbd
+    - name: Sabnzbd (Standalone - No VPN)
       community.docker.docker_container:
         name: "{{ sabnzbd_container_name }}"
         image: "{{ sabnzbd_image_name }}:{{ sabnzbd_image_version }}"
@@ -17,20 +17,45 @@
           - "{{ sabnzbd_data_directory }}:/config:rw"
           - "{{ sabnzbd_downloads_directory }}:/downloads"
           - "{{ sabnzbd_incomplete_directory }}:/incomplete-downloads"
+          - "/mnt/truenas-media:/mnt/truenas-media:rw"
         ports:
           - "{{ sabnzbd_port }}:8080"
         env:
           TZ: "{{ ansible_nas_timezone }}"
           PUID: "{{ sabnzbd_user_id }}"
           PGID: "{{ sabnzbd_group_id }}"
+          HOST_WHITELIST_ENTRIES: "{{ sabnzbd_hostname }}.{{ ansible_nas_domain }}"
+          SABNZBD_HOST_WHITELIST: "{{ sabnzbd_hostname }}.{{ ansible_nas_domain }}"
         restart_policy: unless-stopped
         labels:
           traefik.enable: "{{ sabnzbd_available_externally | string }}"
           traefik.http.routers.sabnzbd.rule: "Host(`{{ sabnzbd_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.sabnzbd.entrypoints: "web,websecure"
           traefik.http.routers.sabnzbd.tls.certresolver: "letsencrypt"
           traefik.http.routers.sabnzbd.tls.domains[0].main: "{{ ansible_nas_domain }}"
           traefik.http.routers.sabnzbd.tls.domains[0].sans: "*.{{ ansible_nas_domain }}"
           traefik.http.services.sabnzbd.loadbalancer.server.port: "8080"
+      when: not sabnzbd_use_vpn
+
+    - name: Sabnzbd (With Gluetun VPN)
+      community.docker.docker_container:
+        name: "{{ sabnzbd_container_name }}"
+        image: "{{ sabnzbd_image_name }}:{{ sabnzbd_image_version }}"
+        pull: true
+        volumes:
+          - "{{ sabnzbd_data_directory }}:/config:rw"
+          - "{{ sabnzbd_downloads_directory }}:/downloads"
+          - "{{ sabnzbd_incomplete_directory }}:/incomplete-downloads"
+          - "/mnt/truenas-media:/mnt/truenas-media:rw"
+        network_mode: "container:gluetun"
+        env:
+          TZ: "{{ ansible_nas_timezone }}"
+          PUID: "{{ sabnzbd_user_id }}"
+          PGID: "{{ sabnzbd_group_id }}"
+          HOST_WHITELIST_ENTRIES: "{{ sabnzbd_hostname }}.{{ ansible_nas_domain }}"
+          SABNZBD_HOST_WHITELIST: "{{ sabnzbd_hostname }}.{{ ansible_nas_domain }}"
+        restart_policy: unless-stopped
+      when: sabnzbd_use_vpn
   when: sabnzbd_enabled is true
 
 - name: Stop Sabnzbd

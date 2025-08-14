@@ -1,0 +1,36 @@
+# Stash configuration for proper video streaming
+host: 0.0.0.0
+port: 9999
+
+# Maximum upload size for scenes
+max_upload_size: 10240
+
+# Transcoding settings
+max_transcode_size: 20480
+max_streaming_transcode_size: 20480
+parallel_tasks: 1
+
+# Cache settings
+cache_size: 100
+
+# Security settings
+security:
+  # Set to false to allow embedding in iframes (needed for some reverse proxy setups)
+  frame_options: ""
+  
+# API settings
+dangerous_allow_public_without_auth: false
+
+# Proxy settings for reverse proxy compatibility
+proxy:
+  # URL used to access Stash externally
+  url: ""
+  
+# Enable DLNA server
+dlna:
+  enabled: false
+  
+# Logging
+log_level: Info
+log_out: true
+log_access: true

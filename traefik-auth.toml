@@ -1,0 +1,7 @@
+[http]
+  [http.middlewares]
+    [http.middlewares.auth.basicAuth]
+      # Username: admin, Password: secure123  
+      # Generated with: htpasswd -nbB admin secure123
+      users = ["admin:$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi"]
+      realm = "1815.space Protected Area"

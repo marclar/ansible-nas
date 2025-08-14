@@ -1,0 +1,24 @@
+---
+# Enable or disable Cloudflare Tunnel
+cloudflare_tunnel_enabled: false
+
+# Cloudflare Tunnel token (get from Cloudflare Zero Trust dashboard)
+# This should be overridden in your inventory group_vars
+cloudflare_tunnel_token: ""
+
+# Docker configuration
+cloudflare_tunnel_container_name: "cloudflare-tunnel"
+cloudflare_tunnel_image_name: "cloudflare/cloudflared"
+cloudflare_tunnel_image_version: "latest"
+
+# Network configuration
+cloudflare_tunnel_network_mode: "host"
+
+# Restart policy
+cloudflare_tunnel_restart_policy: unless-stopped
+
+# Memory limit
+cloudflare_tunnel_memory: 256m
+
+# Additional command arguments (optional)
+cloudflare_tunnel_extra_args: []

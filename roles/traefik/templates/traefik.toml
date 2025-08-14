@@ -2,8 +2,9 @@
   [entryPoints.web]
     address = ":{{ traefik_port_http }}"
 
-  [entryPoints.web.http.redirections.entryPoint]
-    to = "websecure"
+  # Disabled HTTP to HTTPS redirect since Cloudflare Tunnel handles SSL
+  # [entryPoints.web.http.redirections.entryPoint]
+  #   to = "websecure"
 
   [entryPoints.websecure]
     address = ":{{ traefik_port_https }}"
@@ -24,6 +25,10 @@
   providersThrottleDuration = "2s"
   [providers.docker]
     exposedbydefault = false
+  
+  [providers.file]
+    directory = "/etc/traefik/"
+    watch = true
 
 [api]
   insecure = true

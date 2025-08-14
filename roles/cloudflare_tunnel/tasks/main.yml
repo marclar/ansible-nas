@@ -1,0 +1,46 @@
+---
+- name: Create Cloudflare Tunnel directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ansible_nas_user }}"
+    group: "{{ ansible_nas_user }}"
+    mode: 0755
+  with_items:
+    - "{{ docker_home }}/cloudflare-tunnel"
+  when: cloudflare_tunnel_enabled is true
+
+- name: Stop existing Cloudflare Tunnel container
+  docker_container:
+    name: "{{ cloudflare_tunnel_container_name }}"
+    state: absent
+  when: cloudflare_tunnel_enabled is false
+
+- name: Create Cloudflare Tunnel Docker container
+  docker_container:
+    name: "{{ cloudflare_tunnel_container_name }}"
+    image: "{{ cloudflare_tunnel_image_name }}:{{ cloudflare_tunnel_image_version }}"
+    pull: true
+    command: >-
+      tunnel
+      --no-autoupdate
+      run
+      --token {{ cloudflare_tunnel_token }}
+      {{ cloudflare_tunnel_extra_args | join(' ') }}
+    network_mode: "{{ cloudflare_tunnel_network_mode }}"
+    restart_policy: "{{ cloudflare_tunnel_restart_policy }}"
+    memory: "{{ cloudflare_tunnel_memory }}"
+    volumes:
+      - "{{ docker_home }}/cloudflare-tunnel:/etc/cloudflared"
+    labels:
+      traefik.enable: "false"
+    state: "{{ 'started' if cloudflare_tunnel_enabled else 'absent' }}"
+  when: cloudflare_tunnel_enabled is true and cloudflare_tunnel_token != ""
+
+- name: Warn if tunnel token is not set
+  debug:
+    msg: >-
+      WARNING: Cloudflare Tunnel is enabled but cloudflare_tunnel_token is not set.
+      Please set this variable in your inventory group_vars/nas.yml file.
+      Get your token from the Cloudflare Zero Trust dashboard.
+  when: cloudflare_tunnel_enabled is true and cloudflare_tunnel_token == ""

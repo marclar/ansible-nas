@@ -17,6 +17,7 @@
           - "{{ bazarr_tv_directory }}:/tv:rw"
           - "{{ bazarr_movies_directory }}:/movies:rw"
           - "{{ bazarr_data_directory }}:/config:rw"
+          - "/mnt/truenas-media:/mnt/truenas-media:rw"
         ports:
           - "{{ bazarr_port }}:6767"
         env:
@@ -31,6 +32,7 @@
           traefik.http.routers.bazarr.tls.certresolver: "letsencrypt"
           traefik.http.routers.bazarr.tls.domains[0].main: "{{ ansible_nas_domain }}"
           traefik.http.routers.bazarr.tls.domains[0].sans: "*.{{ ansible_nas_domain }}"
+          traefik.http.routers.bazarr.middlewares: "auth@file"
           traefik.http.services.bazarr.loadbalancer.server.port: "6767"
           homepage.group: Download Tools
           homepage.name: Bazarr

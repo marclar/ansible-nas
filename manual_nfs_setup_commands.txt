@@ -1,0 +1,48 @@
+# Manual NFS Setup Commands for Ubuntu VM
+# SSH to your VM (ssh mk@192.168.12.210) and run these commands:
+
+# 1. Install NFS client tools
+sudo apt update
+sudo apt install -y nfs-common
+
+# 2. Create mount point
+sudo mkdir -p /mnt/truenas-media
+sudo chown mk:mk /mnt/truenas-media
+
+# 3. Test TrueNAS connectivity
+ping -c 3 192.168.12.227
+
+# 4. Check available NFS exports from TrueNAS
+showmount -e 192.168.12.227
+
+# 5. Test manual mount
+sudo mount -t nfs 192.168.12.227:/mnt/pool0/media /mnt/truenas-media
+
+# 6. Verify mount worked
+df -h /mnt/truenas-media
+ls -la /mnt/truenas-media
+
+# 7. Test write access (optional)
+touch /mnt/truenas-media/test-file
+ls -la /mnt/truenas-media/test-file
+rm /mnt/truenas-media/test-file
+
+# 8. Unmount temporarily
+sudo umount /mnt/truenas-media
+
+# 9. Add to fstab for permanent mounting
+sudo cp /etc/fstab /etc/fstab.backup
+echo "192.168.12.227:/mnt/pool0/media /mnt/truenas-media nfs defaults,_netdev,rw 0 0" | sudo tee -a /etc/fstab
+
+# 10. Mount via fstab
+sudo mount /mnt/truenas-media
+
+# 11. Verify persistent mount
+df -h /mnt/truenas-media
+
+# 12. Create media directory structure
+mkdir -p /mnt/truenas-media/{movies,tv,music,downloads,photos,books,audiobooks,comics,podcasts,documents}
+mkdir -p /mnt/truenas-media/downloads/{complete,incomplete,torrents}
+
+# 13. Test that it will survive reboot
+echo "NFS mount setup complete! Test with: sudo reboot"

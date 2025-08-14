@@ -1,0 +1,30 @@
+[entryPoints]
+  [entryPoints.web]
+    address = ":80"
+
+  [entryPoints.web.http.redirections.entryPoint]
+    to = "websecure"
+
+  [entryPoints.websecure]
+    address = ":443"
+
+  [entryPoints.traefik]
+    address = ":8083"
+
+[providers]
+  providersThrottleDuration = "2s"
+  [providers.docker]
+    exposedbydefault = false
+
+  [providers.file]
+    filename = "/etc/traefik/dynamic.toml"
+
+[api]
+  insecure = true
+  dashboard = true
+
+[log]
+  level = "INFO"
+
+[ping]
+  terminatingStatusCode = 0

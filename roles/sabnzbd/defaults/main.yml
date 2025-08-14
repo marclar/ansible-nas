@@ -1,6 +1,7 @@
 ---
 sabnzbd_enabled: false
 sabnzbd_available_externally: false
+sabnzbd_use_vpn: false  # Set to true to route through Gluetun VPN
 
 # directories
 sabnzbd_data_directory: "{{ docker_home }}/sabnzbd"

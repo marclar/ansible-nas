@@ -19,3 +19,13 @@ Session.vim
 
 # IntelliJ
 /.idea/
+
+# Ansible Vault
+.vault_pass
+*.vault_pass
+
+# SSL Certificates
+*.pem
+*.key
+*.crt
+*.cer

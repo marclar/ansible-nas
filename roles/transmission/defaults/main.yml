@@ -1,6 +1,7 @@
 ---
 transmission_enabled: false
 transmission_available_externally: false
+transmission_use_vpn: false  # Set to true to route through Gluetun VPN
 
 # directories
 transmission_config_directory: "{{ docker_home }}/transmission/config"

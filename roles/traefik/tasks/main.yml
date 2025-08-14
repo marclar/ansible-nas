@@ -15,6 +15,13 @@
         dest: "{{ traefik_data_directory }}/traefik.toml"
       register: template_config
 
+    - name: Template VPN services configuration
+      ansible.builtin.template:
+        src: vpn-services.toml
+        dest: "{{ traefik_data_directory }}/vpn-services.toml"
+      register: template_vpn_config
+      when: gluetun_enabled | default(false)
+
     - name: Traefik Docker Container
       community.docker.docker_container:
         name: "{{ traefik_container_name }}"
@@ -23,6 +30,8 @@
         network_mode: host
         volumes:
           - "{{ traefik_data_directory }}/traefik.toml:/etc/traefik/traefik.toml:ro"
+          - "{{ traefik_data_directory }}/traefik-auth.toml:/etc/traefik/traefik-auth.toml:ro"
+          - "{{ traefik_data_directory }}/vpn-services.toml:/etc/traefik/vpn-services.toml:ro"
           - "{{ traefik_data_directory }}/letsencrypt:/letsencrypt:rw"
           - "/var/run/docker.sock:/var/run/docker.sock:ro"
         env: "{{ traefik_environment_variables }}"

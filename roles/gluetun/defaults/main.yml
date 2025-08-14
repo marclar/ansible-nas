@@ -1,0 +1,48 @@
+---
+gluetun_enabled: false
+gluetun_container_name: gluetun
+gluetun_image_name: qmcgaw/gluetun
+gluetun_image_version: latest
+
+# VPN Provider Settings
+gluetun_vpn_service_provider: ""  # e.g., "nordvpn", "expressvpn", "surfshark", "mullvad", "protonvpn", "privado"
+gluetun_vpn_type: "openvpn"  # or "wireguard"
+
+# VPN Credentials (provider-specific)
+gluetun_openvpn_user: ""
+gluetun_openvpn_password: ""
+gluetun_wireguard_private_key: ""
+gluetun_wireguard_addresses: ""
+
+# Server Selection
+gluetun_server_countries: ""  # e.g., "United States"
+gluetun_server_cities: ""  # e.g., "New York"
+gluetun_server_hostnames: ""  # specific server hostname if needed
+
+# Network Settings
+gluetun_firewall_vpn_input_ports: ""  # e.g., "51413" for Transmission
+gluetun_firewall_input_ports: "9091,18080"  # Ports for services behind VPN (Transmission, SABnzbd)
+gluetun_firewall_outbound_subnets: "192.168.12.0/24"  # Allow local network access
+
+# Kill Switch
+gluetun_vpn_endpoint_ip: ""  # Optional: specific VPN endpoint IP
+gluetun_block_malicious: "on"
+gluetun_block_ads: "off"
+gluetun_block_surveillance: "off"
+gluetun_unblock: ""  # comma separated list of domain names to unblock
+
+# DNS Settings
+gluetun_dns_address: "1.1.1.1"  # Cloudflare DNS
+gluetun_dns_keep_nameserver: "off"
+
+# Other Settings
+gluetun_timezone: "America/New_York"
+gluetun_user_id: "0"
+gluetun_group_id: "0"
+
+# Health Check
+gluetun_health_vpn_duration_initial: "10s"
+gluetun_health_vpn_duration_addition: "5s"
+
+# Logging
+gluetun_log_level: "info"  # debug, info, warning, error

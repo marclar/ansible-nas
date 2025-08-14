@@ -1,0 +1,24 @@
+# VPN Services Routing Configuration
+# Routes traffic from Traefik to services running through Gluetun VPN
+
+[http.routers]
+  [http.routers.transmission-vpn]
+    rule = "Host(`transmission.{{ ansible_nas_domain }}`)"
+    entryPoints = ["web"]
+    service = "transmission-vpn"
+
+  [http.routers.sabnzbd-vpn]
+    rule = "Host(`sabnzbd.{{ ansible_nas_domain }}`)"
+    entryPoints = ["web"]
+    service = "sabnzbd-vpn"
+
+[http.services]
+  [http.services.transmission-vpn]
+    [http.services.transmission-vpn.loadBalancer]
+      [[http.services.transmission-vpn.loadBalancer.servers]]
+        url = "http://{{ ansible_default_ipv4.address }}:9091"
+
+  [http.services.sabnzbd-vpn]
+    [http.services.sabnzbd-vpn.loadBalancer]
+      [[http.services.sabnzbd-vpn.loadBalancer.servers]]
+        url = "http://{{ ansible_default_ipv4.address }}:18080"

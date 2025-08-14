@@ -89,6 +89,10 @@
       tags:
         - cloudflare_ddns
 
+    - role: cloudflare_tunnel
+      tags:
+        - cloudflare_tunnel
+
     - role: couchdb
       tags:
         - couchdb
@@ -329,6 +333,10 @@
       tags:
         - plex
 
+    - role: stash
+      tags:
+        - stash
+
     - role: portainer
       tags:
         - portainer
@@ -416,6 +424,11 @@
     - role: traefik
       tags:
         - traefik
+
+    - role: gluetun
+      tags:
+        - gluetun
+        - vpn
 
     - role: transmission
       tags:

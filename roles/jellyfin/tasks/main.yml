@@ -21,6 +21,7 @@
           - "{{ jellyfin_tv_directory }}:/tv:{{ jellyfin_tv_permissions }}"
           - "{{ jellyfin_books_directory }}:/books:{{ jellyfin_books_permissions }}"
           - "{{ jellyfin_audiobooks_directory }}:/audiobooks:{{ jellyfin_audiobooks_permissions }}"
+          - "/mnt/truenas-media:/mnt/truenas-media:rw"
         ports:
           - "{{ jellyfin_port_http }}:8096"
         env:
@@ -32,9 +33,6 @@
         labels:
           traefik.enable: "{{ jellyfin_available_externally | string }}"
           traefik.http.routers.jellyfin.rule: "Host(`{{ jellyfin_hostname }}.{{ ansible_nas_domain }}`)"
-          traefik.http.routers.jellyfin.tls.certresolver: "letsencrypt"
-          traefik.http.routers.jellyfin.tls.domains[0].main: "{{ ansible_nas_domain }}"
-          traefik.http.routers.jellyfin.tls.domains[0].sans: "*.{{ ansible_nas_domain }}"
           traefik.http.services.jellyfin.loadbalancer.server.port: "8096"
           homepage.group: Media
           homepage.name: Jellyfin

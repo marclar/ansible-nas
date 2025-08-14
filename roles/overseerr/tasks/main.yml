@@ -30,6 +30,7 @@
           traefik.http.routers.overseerr.tls.certresolver: "letsencrypt"
           traefik.http.routers.overseerr.tls.domains[0].main: "{{ ansible_nas_domain }}"
           traefik.http.routers.overseerr.tls.domains[0].sans: "*.{{ ansible_nas_domain }}"
+          traefik.http.routers.overseerr.middlewares: "auth@file"
           traefik.http.services.overseerr.loadbalancer.server.port: "5055"
           homepage.group: Media
           homepage.name: Overseerr

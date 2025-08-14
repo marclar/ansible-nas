@@ -1,0 +1,90 @@
+---
+- name: Start Gluetun
+  block:
+    - name: Create Gluetun Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - "{{ docker_home }}/gluetun"
+
+    - name: Gluetun Docker Container
+      community.docker.docker_container:
+        name: "{{ gluetun_container_name }}"
+        image: "{{ gluetun_image_name }}:{{ gluetun_image_version }}"
+        pull: true
+        volumes:
+          - "{{ docker_home }}/gluetun:/gluetun:rw"
+        ports:
+          - "8888:8888/tcp"  # HTTP proxy
+          - "8388:8388/tcp"  # Shadowsocks
+          - "8388:8388/udp"  # Shadowsocks
+          - "9091:9091"      # Transmission WebUI
+          - "51413:51413"    # Transmission peer port
+          - "51413:51413/udp"
+          - "18080:8080"     # SABnzbd WebUI (mapped from container's 8080 to host's 18080)
+        capabilities:
+          - NET_ADMIN
+        devices:
+          - /dev/net/tun
+        env:
+          TZ: "{{ gluetun_timezone }}"
+          PUID: "{{ gluetun_user_id }}"
+          PGID: "{{ gluetun_group_id }}"
+          
+          # VPN Configuration
+          VPN_SERVICE_PROVIDER: "{{ gluetun_vpn_service_provider }}"
+          VPN_TYPE: "{{ gluetun_vpn_type }}"
+          
+          # OpenVPN credentials (if using OpenVPN)
+          OPENVPN_USER: "{{ gluetun_openvpn_user }}"
+          OPENVPN_PASSWORD: "{{ gluetun_openvpn_password }}"
+          
+          # WireGuard configuration (if using WireGuard)
+          WIREGUARD_PRIVATE_KEY: "{{ gluetun_wireguard_private_key }}"
+          WIREGUARD_ADDRESSES: "{{ gluetun_wireguard_addresses }}"
+          
+          # Server selection
+          SERVER_COUNTRIES: "{{ gluetun_server_countries }}"
+          SERVER_CITIES: "{{ gluetun_server_cities }}"
+          SERVER_HOSTNAMES: "{{ gluetun_server_hostnames }}"
+          
+          # Firewall
+          FIREWALL_VPN_INPUT_PORTS: "{{ gluetun_firewall_vpn_input_ports }}"
+          FIREWALL_INPUT_PORTS: "{{ gluetun_firewall_input_ports }}"
+          FIREWALL_OUTBOUND_SUBNETS: "{{ gluetun_firewall_outbound_subnets }}"
+          
+          # Kill switch and blocking
+          VPN_ENDPOINT_IP: "{{ gluetun_vpn_endpoint_ip }}"
+          BLOCK_MALICIOUS: "{{ gluetun_block_malicious }}"
+          BLOCK_ADS: "{{ gluetun_block_ads }}"
+          BLOCK_SURVEILLANCE: "{{ gluetun_block_surveillance }}"
+          UNBLOCK: "{{ gluetun_unblock }}"
+          
+          # DNS
+          DNS_ADDRESS: "{{ gluetun_dns_address }}"
+          DNS_KEEP_NAMESERVER: "{{ gluetun_dns_keep_nameserver }}"
+          
+          # Health check
+          HEALTH_VPN_DURATION_INITIAL: "{{ gluetun_health_vpn_duration_initial }}"
+          HEALTH_VPN_DURATION_ADDITION: "{{ gluetun_health_vpn_duration_addition }}"
+          
+          # Logging
+          LOG_LEVEL: "{{ gluetun_log_level }}"
+        restart_policy: unless-stopped
+        memory: "512m"
+        healthcheck:
+          test: ["CMD", "/gluetun-entrypoint", "healthcheck"]
+          interval: 10s
+          timeout: 5s
+          retries: 3
+          start_period: 10s
+  when: gluetun_enabled is true
+
+- name: Stop Gluetun
+  block:
+    - name: Stop Gluetun
+      community.docker.docker_container:
+        name: "{{ gluetun_container_name }}"
+        state: absent
+  when: gluetun_enabled is false

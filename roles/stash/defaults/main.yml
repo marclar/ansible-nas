@@ -1,0 +1,27 @@
+---
+stash_enabled: false
+stash_available_externally: false
+
+# directories
+stash_data_directory: "{{ docker_home }}/stash/config"
+stash_media_directory: "{{ docker_home }}/stash/media"
+stash_metadata_directory: "{{ docker_home }}/stash/metadata"
+stash_cache_directory: "{{ docker_home }}/stash/cache"
+stash_generated_directory: "{{ docker_home }}/stash/generated"
+
+# network
+stash_port: "9999"
+stash_hostname: "stash"
+
+# specs
+stash_memory: 1g
+
+# docker
+stash_container_name: stash
+stash_image_name: "stashapp/stash"
+stash_image_version: latest
+
+# stash specific settings
+stash_user_id: "1000"
+stash_group_id: "1000"
+stash_timezone: "America/Chicago"

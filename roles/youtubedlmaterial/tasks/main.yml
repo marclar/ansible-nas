@@ -25,6 +25,7 @@
           - "{{ youtubedlmaterial_dl_audio_directory }}:/app/audio:rw"
           - "{{ youtubedlmaterial_dl_video_directory }}:/app/video:rw"
           - "{{ youtubedlmaterial_dl_subscriptions_directory }}:/app/subscriptions:rw"
+          - "/mnt/truenas-media:/mnt/truenas-media:rw"
         network_mode: "bridge"
         ports:
           - "{{ youtubedlmaterial_port_http }}:17442"
@@ -36,9 +37,6 @@
         labels:
           traefik.enable: "{{ youtubedlmaterial_available_externally | string }}"
           traefik.http.routers.youtubedlmaterial.rule: "Host(`{{ youtubedlmaterial_hostname }}.{{ ansible_nas_domain }}`)"
-          traefik.http.routers.youtubedlmaterial.tls.certresolver: "letsencrypt"
-          traefik.http.routers.youtubedlmaterial.tls.domains[0].main: "{{ ansible_nas_domain }}"
-          traefik.http.routers.youtubedlmaterial.tls.domains[0].sans: "*.{{ ansible_nas_domain }}"
           traefik.http.services.youtubedlmaterial.loadbalancer.server.port: "17442"
           homepage.group: Download Tools
           homepage.name: YoutubeDL Material

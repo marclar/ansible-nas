@@ -15,6 +15,7 @@
         pull: true
         volumes:
           - "{{ prowlarr_data_directory }}:/config:rw"
+          - "/mnt/truenas-media:/mnt/truenas-media:rw"
         ports:
           - "{{ prowlarr_port }}:9696"
         env:
@@ -29,6 +30,7 @@
           traefik.http.routers.prowlarr.tls.certresolver: "letsencrypt"
           traefik.http.routers.prowlarr.tls.domains[0].main: "{{ ansible_nas_domain }}"
           traefik.http.routers.prowlarr.tls.domains[0].sans: "*.{{ ansible_nas_domain }}"
+          traefik.http.routers.prowlarr.middlewares: "auth@file"
           traefik.http.services.prowlarr.loadbalancer.server.port: "9696"
           homepage.group: Download Tools
           homepage.name: Prowlarr

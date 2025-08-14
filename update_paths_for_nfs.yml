@@ -1,0 +1,41 @@
+---
+# Ansible-NAS Path Updates for TrueNAS NFS Mount
+# This will update your media apps to use the NFS mounted storage
+
+# Add these to your inventories/production/group_vars/nas.yml file
+# after the NFS mount is configured and working
+
+# NFS Mount Point - TrueNAS 192.168.12.227:/mnt/pool0/media
+nfs_mount_point: "/mnt/truenas-media"
+
+# Updated storage paths to use NFS mount
+downloads_root: "{{ nfs_mount_point }}/downloads"
+torrents_root: "{{ nfs_mount_point }}/downloads/torrents"
+movies_root: "{{ nfs_mount_point }}/movies"
+tv_root: "{{ nfs_mount_point }}/tv"
+music_root: "{{ nfs_mount_point }}/music"
+photos_root: "{{ nfs_mount_point }}/photos"
+books_root: "{{ nfs_mount_point }}/books"
+audiobooks_root: "{{ nfs_mount_point }}/audiobooks"
+comics_root: "{{ nfs_mount_point }}/comics"
+podcasts_root: "{{ nfs_mount_point }}/podcasts"
+documents_root: "{{ nfs_mount_point }}/documents"
+
+# Keep Docker data on local VM storage for performance
+docker_home: "/home/mk/docker"
+
+# Optional: Configure specific download subdirectories
+transmission_download_directory: "{{ downloads_root }}/complete"
+sabnzbd_download_directory: "{{ downloads_root }}/complete"
+sabnzbd_incomplete_directory: "{{ downloads_root }}/incomplete"
+
+# Make sure apps can access the NFS mount
+# (These apps will be redeployed to use new paths)
+apps_to_redeploy:
+  - plex
+  - radarr  
+  - sonarr
+  - bazarr
+  - prowlarr
+  - transmission
+  - sabnzbd

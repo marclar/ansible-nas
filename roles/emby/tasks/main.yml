@@ -17,6 +17,7 @@
           - "{{ emby_config_directory }}:/config:rw"
           - "{{ emby_movies_directory }}:/movies:{{ emby_movies_permissions }}"
           - "{{ emby_tv_directory }}:/tv:{{ emby_tv_permissions }}"
+          - "/mnt/truenas-media:/mnt/truenas-media:rw"
         ports:
           - "{{ emby_port_http }}:8096"
           - "{{ emby_port_https }}:8920"
@@ -30,9 +31,6 @@
         labels:
           traefik.enable: "{{ emby_available_externally | string }}"
           traefik.http.routers.emby.rule: "Host(`{{ emby_hostname }}.{{ ansible_nas_domain }}`)"
-          traefik.http.routers.emby.tls.certresolver: "letsencrypt"
-          traefik.http.routers.emby.tls.domains[0].main: "{{ ansible_nas_domain }}"
-          traefik.http.routers.emby.tls.domains[0].sans: "*.{{ ansible_nas_domain }}"
           traefik.http.services.emby.loadbalancer.server.port: "8096"
   when: emby_enabled is true
 
