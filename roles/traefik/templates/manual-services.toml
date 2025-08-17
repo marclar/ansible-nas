@@ -1,0 +1,41 @@
+# Manual Services Routing Configuration
+# For services that don't have Docker labels or use VPN networking
+
+[http.routers]
+  # Plex (backup route if labels fail)
+  [http.routers.plex-manual]
+    rule = "Host(`{{ plex_hostname }}.{{ ansible_nas_domain }}`)"
+    entryPoints = ["web"]
+    service = "plex-manual"
+    priority = 1
+
+  # Transmission (VPN network mode)
+  [http.routers.transmission-vpn]
+    rule = "Host(`{{ transmission_hostname }}.{{ ansible_nas_domain }}`)"
+    entryPoints = ["web"]
+    service = "transmission-vpn"
+
+  # SABnzbd (VPN network mode)
+  [http.routers.sabnzbd-vpn]
+    rule = "Host(`{{ sabnzbd_hostname }}.{{ ansible_nas_domain }}`)"
+    entryPoints = ["web"]
+    service = "sabnzbd-vpn"
+
+[http.services]
+  # Plex
+  [http.services.plex-manual]
+    [http.services.plex-manual.loadBalancer]
+      [[http.services.plex-manual.loadBalancer.servers]]
+        url = "http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:{{ plex_port }}"
+
+  # Transmission (VPN)
+  [http.services.transmission-vpn]
+    [http.services.transmission-vpn.loadBalancer]
+      [[http.services.transmission-vpn.loadBalancer.servers]]
+        url = "http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:{{ transmission_port }}"
+
+  # SABnzbd (VPN)
+  [http.services.sabnzbd-vpn]
+    [http.services.sabnzbd-vpn.loadBalancer]
+      [[http.services.sabnzbd-vpn.loadBalancer.servers]]
+        url = "http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:{{ sabnzbd_port }}"

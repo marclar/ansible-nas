@@ -1,0 +1,24 @@
+---
+spotizerr_enabled: false
+spotizerr_available_externally: false
+
+# directories
+spotizerr_data_directory: "{{ docker_home }}/spotizerr/data"
+spotizerr_downloads_directory: "{{ music_root }}"  # Use NFS music directory
+spotizerr_logs_directory: "{{ docker_home }}/spotizerr/logs"
+
+# network
+spotizerr_port: "7171"
+spotizerr_hostname: "spotizerr"
+
+# docker
+spotizerr_container_name: "spotizerr"
+spotizerr_image_name: "cooldockerizer93/spotizerr"
+spotizerr_image_version: "3.1.0"
+
+# Redis configuration for Spotizerr
+spotizerr_redis_enabled: true
+spotizerr_redis_container_name: "redis"
+
+# specs
+spotizerr_memory: 512m

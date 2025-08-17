@@ -1,0 +1,66 @@
+---
+- name: Start Spotizerr
+  block:
+    - name: Start Redis for Spotizerr
+      community.docker.docker_container:
+        name: "{{ spotizerr_redis_container_name }}"
+        image: "redis:alpine"
+        pull: true
+        volumes:
+          - "{{ docker_home }}/redis/data:/data:rw"
+        restart_policy: unless-stopped
+      when: spotizerr_redis_enabled
+
+    - name: Create Spotizerr Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_nas_user | default('mk') }}"
+        group: "{{ ansible_nas_user | default('mk') }}"
+        mode: '0775'
+      with_items:
+        - "{{ spotizerr_data_directory }}"
+        - "{{ spotizerr_logs_directory }}"
+      
+    - name: Ensure music directory exists on NFS
+      ansible.builtin.file:
+        path: "{{ spotizerr_downloads_directory }}"
+        state: directory
+        mode: '0775'
+
+    - name: Spotizerr Docker Container
+      community.docker.docker_container:
+        name: "{{ spotizerr_container_name }}"
+        image: "{{ spotizerr_image_name }}:{{ spotizerr_image_version }}"
+        pull: true
+        volumes:
+          - "{{ spotizerr_data_directory }}:/app/data:rw"
+          - "{{ spotizerr_downloads_directory }}:/app/downloads:rw"
+          - "{{ spotizerr_logs_directory }}:/app/logs:rw"
+        ports:
+          - "{{ spotizerr_port }}:7171"
+        env:
+          TZ: "{{ ansible_nas_timezone }}"
+          PUID: "{{ ansible_nas_user_id | default('1000') }}"
+          PGID: "{{ ansible_nas_group_id | default('1000') }}"
+          REDIS_HOST: "{{ spotizerr_redis_container_name }}"
+          REDIS_PORT: "6379"
+          REDIS_DB: "0"
+        links:
+          - "{{ spotizerr_redis_container_name }}:redis"
+        restart_policy: unless-stopped
+        memory: "{{ spotizerr_memory }}"
+        labels:
+          traefik.enable: "{{ spotizerr_available_externally | string }}"
+          traefik.http.routers.spotizerr.rule: "Host(`{{ spotizerr_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.spotizerr.entrypoints: "web"
+          traefik.http.services.spotizerr.loadbalancer.server.port: "7171"
+  when: spotizerr_enabled is true
+
+- name: Stop Spotizerr
+  block:
+    - name: Stop Spotizerr
+      community.docker.docker_container:
+        name: "{{ spotizerr_container_name }}"
+        state: absent
+  when: spotizerr_enabled is false

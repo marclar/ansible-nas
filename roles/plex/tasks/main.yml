@@ -5,9 +5,22 @@
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
       with_items:
         - "{{ plex_config_directory }}"
         - "{{ plex_logs }}"
+      become: true
+
+    - name: Copy Plex scan script
+      ansible.builtin.copy:
+        src: plex-scan.sh
+        dest: "{{ plex_config_directory }}/plex-scan.sh"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+      become: true
 
     - name: Create Plex Docker Container
       community.docker.docker_container:
@@ -16,13 +29,13 @@
         pull: true
         volumes:
           - "{{ plex_config_directory }}:/config:rw"
-          - "{{ plex_logs }}:/opt/plex/Library/Application Support/Plex Media Server/Logs:rw"
           - "{{ plex_movies_directory }}:/movies:{{ plex_movies_permissions }}"
           - "{{ plex_tv_directory }}:/tv:{{ plex_tv_permissions }}"
           - "{{ plex_photos_directory }}:/photos:{{ plex_photos_permissions }}"
           - "{{ plex_podcasts_directory }}:/podcasts:{{ plex_podcasts_permissions }}"
           - "{{ plex_music_directory }}:/music:{{ plex_music_permissions }}"
           - "{{ plex_audiobooks_directory }}:/audiobooks:{{ plex_audiobooks_permissions }}"
+          - "/mnt/truenas-media:/data:rw"
           - "/mnt/truenas-media:/mnt/truenas-media:rw"
         network_mode: "host"
         devices: "{{ plex_devices | default(omit) }}"
@@ -37,6 +50,14 @@
           traefik.enable: "{{ plex_available_externally | string }}"
           traefik.http.routers.plex.rule: "Host(`{{ plex_hostname }}.{{ ansible_nas_domain }}`)"
           traefik.http.services.plex.loadbalancer.server.port: "32400"
+
+    - name: Set up Plex library scan cron job
+      ansible.builtin.cron:
+        name: "Plex library scan"
+        minute: "*/15"
+        job: "docker exec {{ plex_container_name }} /config/plex-scan.sh"
+        user: "{{ ansible_user }}"
+        state: present
   when: plex_enabled is true
 
 - name: Stop Plex
@@ -45,4 +66,10 @@
       community.docker.docker_container:
         name: "{{ plex_container_name }}"
         state: absent
+    
+    - name: Remove Plex library scan cron job
+      ansible.builtin.cron:
+        name: "Plex library scan"
+        state: absent
+        user: "{{ ansible_user }}"
   when: plex_enabled is false

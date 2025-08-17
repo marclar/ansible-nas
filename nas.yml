@@ -389,6 +389,10 @@
       tags:
         - sonarr
 
+    - role: spotizerr
+      tags:
+        - spotizerr
+
     - role: speedtest-tracker
       tags:
         - speedtest-tracker

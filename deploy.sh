@@ -97,6 +97,17 @@ if [ -d ".git" ]; then
     fi
 fi
 
+# Check if passwordless sudo is configured
+SSH_TEST=$(ssh -o BatchMode=yes -o ConnectTimeout=5 mk@$TARGET_HOST "sudo -n ls /root 2>&1" 2>/dev/null || echo "FAIL")
+if [[ "$SSH_TEST" == "FAIL" ]] || [[ "$SSH_TEST" == *"password"* ]]; then
+    print_status $YELLOW "⚠️  Passwordless sudo not configured"
+    print_status $YELLOW "   You will be prompted for sudo password during deployment"
+    SUDO_FLAG="-K"
+else
+    print_status $GREEN "✅ Passwordless sudo configured"
+    SUDO_FLAG=""
+fi
+
 # Show deployment options
 echo ""
 print_status $BLUE "🚀 Deployment Options:"
@@ -112,7 +123,7 @@ echo ""
 case $DEPLOY_OPTION in
     1)
         print_status $GREEN "🚀 Starting full deployment..."
-        ANSIBLE_CMD="ansible-playbook -i inventories/production/inventory nas.yml --vault-password-file $VAULT_FILE"
+        ANSIBLE_CMD="ansible-playbook -i inventories/production/inventory nas.yml --vault-password-file $VAULT_FILE $SUDO_FLAG"
         ;;
     2)
         echo ""
@@ -126,15 +137,15 @@ case $DEPLOY_OPTION in
             print_status $RED "No tags specified, exiting"
             exit 1
         fi
-        ANSIBLE_CMD="ansible-playbook -i inventories/production/inventory nas.yml --tags $TAGS --vault-password-file $VAULT_FILE"
+        ANSIBLE_CMD="ansible-playbook -i inventories/production/inventory nas.yml --tags $TAGS --vault-password-file $VAULT_FILE $SUDO_FLAG"
         ;;
     3)
         print_status $GREEN "🔍 Running deployment dry-run..."
-        ANSIBLE_CMD="ansible-playbook -i inventories/production/inventory nas.yml --check --vault-password-file $VAULT_FILE"
+        ANSIBLE_CMD="ansible-playbook -i inventories/production/inventory nas.yml --check --vault-password-file $VAULT_FILE $SUDO_FLAG"
         ;;
     4)
         print_status $GREEN "📝 Updating configurations only..."
-        ANSIBLE_CMD="ansible-playbook -i inventories/production/inventory nas.yml --tags config --vault-password-file $VAULT_FILE"
+        ANSIBLE_CMD="ansible-playbook -i inventories/production/inventory nas.yml --tags config --vault-password-file $VAULT_FILE $SUDO_FLAG"
         ;;
     *)
         print_status $RED "Invalid option selected"

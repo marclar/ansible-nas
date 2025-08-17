@@ -1,0 +1,4 @@
+# Ansible-NAS passwordless sudo configuration
+# Add this to /etc/sudoers.d/ansible-nas on the target server
+# User mk can run all commands without password for automation
+mk ALL=(ALL) NOPASSWD: ALL
