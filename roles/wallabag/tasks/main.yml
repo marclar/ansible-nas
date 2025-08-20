@@ -5,8 +5,9 @@
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
-        owner: 65534
-        group: 65534
+        owner: "{{ ansible_nas_user_id | default(ansible_user_uid) }}"
+        group: "{{ ansible_nas_group_id | default(ansible_user_gid) }}"
+        mode: "0755"
       with_items:
         - "{{ wallabag_data_directory }}/data"
         - "{{ wallabag_data_directory }}/data/db"
@@ -25,7 +26,6 @@
         env:
           SYMFONY__ENV__DOMAIN_NAME: "https://{{ wallabag_hostname }}.{{ ansible_nas_domain }}"
         restart_policy: unless-stopped
-        memory: "{{ wallabag_memory }}"
         labels:
           traefik.enable: "{{ wallabag_available_externally | string }}"
           traefik.http.routers.wallabag.rule: "Host(`{{ wallabag_hostname }}.{{ ansible_nas_domain }}`)"
