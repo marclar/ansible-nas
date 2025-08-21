@@ -135,7 +135,13 @@ print_success "Swap optimized for containers"
 
 # Install Python requirements for Ansible-NAS
 print_status "Installing Python requirements..."
-pip3 install --user ansible-core docker docker-compose
+# Use system packages for Ubuntu 22.04+ (PEP 668 compliance)
+sudo apt install -y python3-pip python3-docker python3-docker-compose
+# Alternative: use pipx for user installations
+sudo apt install -y pipx
+pipx ensurepath
+# Or use virtual environment for additional packages if needed
+python3 -m venv ~/ansible-venv 2>/dev/null || true
 print_success "Python requirements installed"
 
 # Clone Ansible-NAS repository
