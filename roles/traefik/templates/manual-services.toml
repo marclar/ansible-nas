@@ -32,10 +32,10 @@
   [http.services.transmission-vpn]
     [http.services.transmission-vpn.loadBalancer]
       [[http.services.transmission-vpn.loadBalancer.servers]]
-        url = "http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:{{ transmission_port }}"
+        url = "http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:9091"
 
   # SABnzbd (VPN)
   [http.services.sabnzbd-vpn]
     [http.services.sabnzbd-vpn.loadBalancer]
       [[http.services.sabnzbd-vpn.loadBalancer.servers]]
-        url = "http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:{{ sabnzbd_port }}"
+        url = "http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:18080"

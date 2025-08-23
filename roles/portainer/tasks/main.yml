@@ -29,12 +29,8 @@
         labels:
           traefik.enable: "{{ portainer_available_externally | string }}"
           traefik.http.routers.portainer.rule: "Host(`{{ portainer_hostname }}.{{ ansible_nas_domain }}`)"
-          traefik.http.routers.portainer.tls.certresolver: "letsencrypt"
-          traefik.http.routers.portainer.tls.domains[0].main: "{{ ansible_nas_domain }}"
-          traefik.http.routers.portainer.tls.domains[0].sans: "*.{{ ansible_nas_domain }}"
-          traefik.http.services.portainer.loadbalancer.server.port: "9443"
-          traefik.http.routers.portainer.middlewares: "portainer-ipallowlist@docker"
-          traefik.http.middlewares.portainer-ipallowlist.ipallowlist.sourcerange: "{{ portainer_ip_allowlist }}"
+          traefik.http.routers.portainer.entrypoints: "web"
+          traefik.http.services.portainer.loadbalancer.server.port: "9000"
           homepage.group: System Tools
           homepage.name: Portainer
           homepage.icon: portainer.png

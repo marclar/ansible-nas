@@ -30,6 +30,7 @@
         labels:
           traefik.enable: "{{ n8n_available_externally | string }}"
           traefik.http.routers.n8n.rule: "Host(`{{ n8n_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.n8n.entrypoints: "web"
           traefik.http.services.n8n.loadbalancer.server.port: "5678"
   when: n8n_enabled is true
 

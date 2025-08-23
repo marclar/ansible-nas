@@ -11,7 +11,7 @@
     - name: Gluetun Docker Container
       community.docker.docker_container:
         name: "{{ gluetun_container_name }}"
-        image: "{{ gluetun_image_name }}:{{ gluetun_image_version }}"
+        image: "{{ gluetun_image | default('qmcgaw/gluetun:latest') }}"
         pull: true
         volumes:
           - "{{ docker_home }}/gluetun:/gluetun:rw"
@@ -27,6 +27,9 @@
           - NET_ADMIN
         devices:
           - /dev/net/tun
+        sysctls:
+          net.ipv4.conf.all.src_valid_mark: 1
+          net.ipv6.conf.all.disable_ipv6: 1
         env:
           TZ: "{{ gluetun_timezone }}"
           PUID: "{{ gluetun_user_id }}"
@@ -39,15 +42,20 @@
           # OpenVPN credentials (if using OpenVPN)
           OPENVPN_USER: "{{ gluetun_openvpn_user }}"
           OPENVPN_PASSWORD: "{{ gluetun_openvpn_password }}"
+          OPENVPN_PROTOCOL: "{{ gluetun_openvpn_protocol | default('udp') }}"
           
           # WireGuard configuration (if using WireGuard)
           WIREGUARD_PRIVATE_KEY: "{{ gluetun_wireguard_private_key }}"
           WIREGUARD_ADDRESSES: "{{ gluetun_wireguard_addresses }}"
           
           # Server selection
-          SERVER_COUNTRIES: "{{ gluetun_server_countries }}"
-          SERVER_CITIES: "{{ gluetun_server_cities }}"
-          SERVER_HOSTNAMES: "{{ gluetun_server_hostnames }}"
+          SERVER_COUNTRIES: "{{ gluetun_server_countries | default('') }}"
+          SERVER_CITIES: "{{ gluetun_server_cities | default('') }}"
+          SERVER_HOSTNAMES: "{{ gluetun_server_hostnames | default('') }}"
+          
+          # ProtonVPN specific settings
+          VPN_PORT_FORWARDING: "{{ gluetun_vpn_port_forwarding | default('off') }}"
+          PORT_FORWARD_ONLY: "{{ gluetun_port_forward_only | default('off') }}"
           
           # Firewall
           FIREWALL_VPN_INPUT_PORTS: "{{ gluetun_firewall_vpn_input_ports }}"

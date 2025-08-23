@@ -26,6 +26,7 @@
         labels:
           traefik.enable: "{{ tiddlywiki_available_externally | string }}"
           traefik.http.routers.tiddlywiki.rule: "Host(`{{ tiddlywiki_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.tiddlywiki.entrypoints: "web"
           traefik.http.services.tiddlywiki.loadbalancer.server.port: "8080"
   when: tiddlywiki_enabled is true
 

@@ -36,7 +36,6 @@
         network_mode: host
         volumes:
           - "{{ traefik_data_directory }}/traefik.toml:/etc/traefik/traefik.toml:ro"
-          - "{{ traefik_data_directory }}/traefik-auth.toml:/etc/traefik/traefik-auth.toml:ro"
           - "{{ traefik_data_directory }}/vpn-services.toml:/etc/traefik/vpn-services.toml:ro"
           - "{{ traefik_data_directory }}/manual-services.toml:/etc/traefik/manual-services.toml:ro"
           - "{{ traefik_data_directory }}/letsencrypt:/letsencrypt:rw"
