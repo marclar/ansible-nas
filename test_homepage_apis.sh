@@ -30,7 +30,7 @@ fi
 
 # Test SABnzbd
 echo -n "Testing SABnzbd API... "
-SAB_KEY="daecd174a70c4246b86beadb8d013d0e"
+SAB_KEY="3b311605a03340b4b09496fceb0991a5"
 SAB_RESPONSE=$(curl -s -w "\n%{http_code}" "http://192.168.12.100:18080/api?mode=version&apikey=$SAB_KEY" 2>/dev/null | tail -1)
 if [ "$SAB_RESPONSE" = "200" ]; then
     echo -e "${GREEN}✓ Connected${NC}"
