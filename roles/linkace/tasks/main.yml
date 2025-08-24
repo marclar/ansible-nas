@@ -1,0 +1,100 @@
+---
+- name: Start LinkAce
+  block:
+    - name: Create LinkAce Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_nas_user }}"
+        group: "{{ ansible_nas_user }}"
+        mode: 0755
+      with_items:
+        - "{{ linkace_data_directory }}"
+        - "{{ linkace_data_directory }}/app"
+        - "{{ linkace_data_directory }}/logs"
+        - "{{ linkace_data_directory }}/backups"
+        - "{{ linkace_data_directory }}/database"
+
+    - name: Generate LinkAce application key if not set
+      ansible.builtin.set_fact:
+        linkace_app_key: "base64:{{ lookup('password', '/dev/null chars=ascii_letters,digits length=32') | b64encode }}"
+      when: linkace_app_key == ""
+
+    - name: Create LinkAce MariaDB Container (if using MySQL)
+      community.docker.docker_container:
+        name: "{{ linkace_mariadb_container_name }}"
+        image: "{{ linkace_mariadb_image }}:{{ linkace_mariadb_version }}"
+        pull: true
+        volumes:
+          - "{{ linkace_data_directory }}/database:/var/lib/mysql:rw"
+        env:
+          MYSQL_ROOT_PASSWORD: "{{ linkace_db_password }}"
+          MYSQL_DATABASE: "{{ linkace_db_name }}"
+          MYSQL_USER: "{{ linkace_db_user }}"
+          MYSQL_PASSWORD: "{{ linkace_db_password }}"
+        restart_policy: unless-stopped
+        memory: 512m
+      when: linkace_enabled is true and linkace_db_type == "mysql"
+
+    - name: Wait for MariaDB to be ready (if using MySQL)
+      ansible.builtin.wait_for:
+        port: 3306
+        host: "{{ ansible_nas_server_ip }}"
+        delay: 10
+        timeout: 60
+      when: linkace_enabled is true and linkace_db_type == "mysql"
+
+    - name: Create LinkAce Docker Container
+      community.docker.docker_container:
+        name: "{{ linkace_container_name }}"
+        image: "{{ linkace_image_name }}:{{ linkace_image_version }}"
+        pull: true
+        volumes:
+          - "{{ linkace_data_directory }}/app:/app/storage/app:rw"
+          - "{{ linkace_data_directory }}/logs:/app/storage/logs:rw"
+          - "{{ linkace_data_directory }}/backups:/app/storage/app/backups:rw"
+          - "{{ linkace_data_directory }}/database:/app/database:rw"
+        ports:
+          - "{{ linkace_port }}:80"
+        env:
+          APP_KEY: "{{ linkace_app_key }}"
+          APP_URL: "{{ linkace_app_url }}"
+          APP_TIMEZONE: "{{ linkace_app_timezone }}"
+          APP_LOCALE: "{{ linkace_app_locale }}"
+          DB_CONNECTION: "{{ linkace_db_type }}"
+          DB_HOST: "{{ linkace_db_host if linkace_db_type == 'mysql' else '' }}"
+          DB_PORT: "{{ linkace_db_port if linkace_db_type == 'mysql' else '' }}"
+          DB_DATABASE: "{{ linkace_db_name if linkace_db_type == 'mysql' else '/app/database/database.sqlite' }}"
+          DB_USERNAME: "{{ linkace_db_user if linkace_db_type == 'mysql' else '' }}"
+          DB_PASSWORD: "{{ linkace_db_password if linkace_db_type == 'mysql' else '' }}"
+          GUEST_ACCESS_ENABLED: "{{ linkace_enable_guest_access }}"
+          DARK_MODE_DEFAULT: "{{ linkace_enable_dark_mode }}"
+        restart_policy: unless-stopped
+        memory: "{{ linkace_memory }}"
+        labels:
+          traefik.enable: "{{ linkace_available_externally | string }}"
+          traefik.http.routers.linkace.rule: "Host(`{{ linkace_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.linkace.entrypoints: "web"
+          traefik.http.services.linkace.loadbalancer.server.port: "80"
+          homepage.group: "Tools"
+          homepage.name: "LinkAce"
+          homepage.icon: "linkace"
+          homepage.href: "http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}:{{ linkace_port }}"
+          homepage.description: "Bookmark Manager"
+
+  when: linkace_enabled is true
+
+- name: Stop LinkAce
+  block:
+    - name: Stop LinkAce Container
+      community.docker.docker_container:
+        name: "{{ linkace_container_name }}"
+        state: absent
+    
+    - name: Stop LinkAce MariaDB Container
+      community.docker.docker_container:
+        name: "{{ linkace_mariadb_container_name }}"
+        state: absent
+      when: linkace_db_type == "mysql"
+      
+  when: linkace_enabled is false

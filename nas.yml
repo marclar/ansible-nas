@@ -161,6 +161,10 @@
       tags:
         - gitea
 
+    - role: linkace
+      tags:
+        - linkace
+
     - role: gitlab
       tags:
         - gitlab

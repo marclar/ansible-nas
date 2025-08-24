@@ -1,0 +1,41 @@
+---
+linkace_enabled: false
+linkace_available_externally: false
+
+# directories
+linkace_data_directory: "{{ docker_home }}/linkace"
+
+# network
+linkace_port: "8090"
+linkace_hostname: "linkace"
+
+# database
+linkace_db_type: "sqlite"  # Options: sqlite, mysql, postgresql
+linkace_db_host: "linkace-db"
+linkace_db_port: "3306"
+linkace_db_name: "linkace"
+linkace_db_user: "linkace"
+linkace_db_password: "changeme"
+
+# application
+linkace_app_key: ""  # Will be generated if empty
+linkace_app_url: "https://{{ linkace_hostname }}.{{ ansible_nas_domain }}"
+linkace_app_timezone: "{{ ansible_nas_timezone }}"
+linkace_app_locale: "en_US"
+
+# features
+linkace_enable_guest_access: "false"
+linkace_enable_dark_mode: "true"
+
+# specs
+linkace_memory: 1g
+
+# docker
+linkace_container_name: "linkace"
+linkace_image_name: "linkace/linkace"
+linkace_image_version: "latest"
+
+# mariadb for mysql setup
+linkace_mariadb_container_name: "linkace-db"
+linkace_mariadb_image: "mariadb"
+linkace_mariadb_version: "11.2"
