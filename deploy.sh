@@ -115,9 +115,10 @@ echo "  1) Full deployment (all services)"
 echo "  2) Specific services only"
 echo "  3) Dry run (check what would be deployed)"
 echo "  4) Update configurations only"
+echo "  5) Sync API keys (run after fresh deployment)"
 echo ""
 
-read -p "Choose deployment option (1-4): " -n 1 -r DEPLOY_OPTION
+read -p "Choose deployment option (1-5): " -n 1 -r DEPLOY_OPTION
 echo ""
 
 case $DEPLOY_OPTION in
@@ -146,6 +147,17 @@ case $DEPLOY_OPTION in
     4)
         print_status $GREEN "📝 Updating configurations only..."
         ANSIBLE_CMD="ansible-playbook -i inventories/production/inventory nas.yml --tags config --vault-password-file $VAULT_FILE $SUDO_FLAG"
+        ;;
+    5)
+        print_status $GREEN "🔄 Syncing API keys from running services..."
+        echo ""
+        if [ -f "./post_deploy_config.sh" ]; then
+            ./post_deploy_config.sh "$TARGET_HOST" "$VAULT_FILE"
+            exit $?
+        else
+            print_status $RED "Error: post_deploy_config.sh not found"
+            exit 1
+        fi
         ;;
     *)
         print_status $RED "Invalid option selected"
