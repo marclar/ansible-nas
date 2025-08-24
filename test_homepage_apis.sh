@@ -68,7 +68,7 @@ fi
 
 # Test Radarr
 echo -n "Testing Radarr API... "
-RADARR_KEY="6905a6146e0d44b781ce05c6a3b4c825"
+RADARR_KEY="b7195ebe0ed54833815c4b38d7f13cda"
 RADARR_RESPONSE=$(curl -s -w "\n%{http_code}" "http://192.168.12.100:7878/api/v3/system/status?apikey=$RADARR_KEY" 2>/dev/null | tail -1)
 if [ "$RADARR_RESPONSE" = "200" ]; then
     echo -e "${GREEN}✓ Connected${NC}"
@@ -78,7 +78,7 @@ fi
 
 # Test Sonarr
 echo -n "Testing Sonarr API... "
-SONARR_KEY="8c6b8e8473aa43f2a0d23812376dbe1d"
+SONARR_KEY="1bfe4d8b21284f4f93b1e3cb6f16a302"
 SONARR_RESPONSE=$(curl -s -w "\n%{http_code}" "http://192.168.12.100:8989/api/v3/system/status?apikey=$SONARR_KEY" 2>/dev/null | tail -1)
 if [ "$SONARR_RESPONSE" = "200" ]; then
     echo -e "${GREEN}✓ Connected${NC}"
