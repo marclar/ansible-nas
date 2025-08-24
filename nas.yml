@@ -161,10 +161,6 @@
       tags:
         - gitea
 
-    - role: grimoire
-      tags:
-        - grimoire
-
     - role: gitlab
       tags:
         - gitlab
