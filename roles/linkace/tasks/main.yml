@@ -1,12 +1,15 @@
 ---
 - name: Start LinkAce
   block:
+    - name: Check if LinkAce directories exist
+      ansible.builtin.stat:
+        path: "{{ linkace_data_directory }}"
+      register: linkace_dir
+
     - name: Create LinkAce Directories
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
-        owner: "{{ ansible_nas_user }}"
-        group: "{{ ansible_nas_user }}"
         mode: 0755
       with_items:
         - "{{ linkace_data_directory }}"
@@ -14,6 +17,7 @@
         - "{{ linkace_data_directory }}/logs"
         - "{{ linkace_data_directory }}/backups"
         - "{{ linkace_data_directory }}/database"
+      when: not linkace_dir.stat.exists
 
     - name: Generate LinkAce application key if not set
       ansible.builtin.set_fact:
@@ -61,12 +65,8 @@
           APP_URL: "{{ linkace_app_url }}"
           APP_TIMEZONE: "{{ linkace_app_timezone }}"
           APP_LOCALE: "{{ linkace_app_locale }}"
-          DB_CONNECTION: "{{ linkace_db_type }}"
-          DB_HOST: "{{ linkace_db_host if linkace_db_type == 'mysql' else '' }}"
-          DB_PORT: "{{ linkace_db_port if linkace_db_type == 'mysql' else '' }}"
-          DB_DATABASE: "{{ linkace_db_name if linkace_db_type == 'mysql' else '/app/database/database.sqlite' }}"
-          DB_USERNAME: "{{ linkace_db_user if linkace_db_type == 'mysql' else '' }}"
-          DB_PASSWORD: "{{ linkace_db_password if linkace_db_type == 'mysql' else '' }}"
+          DB_CONNECTION: "sqlite"
+          DB_DATABASE: "/app/database/database.sqlite"
           GUEST_ACCESS_ENABLED: "{{ linkace_enable_guest_access }}"
           DARK_MODE_DEFAULT: "{{ linkace_enable_dark_mode }}"
         restart_policy: unless-stopped
