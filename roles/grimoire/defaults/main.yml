@@ -1,0 +1,22 @@
+---
+grimoire_enabled: false
+grimoire_available_externally: false
+
+# directories
+grimoire_data_directory: "{{ docker_home }}/grimoire"
+
+# network
+grimoire_port: "5173"
+grimoire_hostname: "grimoire"
+
+# specs
+grimoire_memory: 1g
+
+# docker
+grimoire_container_name: "grimoire"
+grimoire_image_name: "goniszewski/grimoire"
+grimoire_image_version: "preview"
+
+# grimoire specific settings
+grimoire_https_only: "false"
+grimoire_signup_disabled: "false"
