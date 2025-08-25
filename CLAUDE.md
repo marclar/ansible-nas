@@ -281,6 +281,7 @@ ssh mk@192.168.12.100 "df -h | grep truenas"
 - Network: Stable connectivity to both Cloudflare and TrueNAS
 
 ### **Recent Changes:**
+- ✅ Removed Organizr, Emby, YouTube-DL, and TiddlyWiki services (Aug 25, 2025)
 - ✅ Removed LinkAce bookmark manager service (Aug 25, 2025)
 - ✅ Cleaned up all troubleshooting scripts (Aug 7, 2025)
 - ✅ Fixed SABnzbd hostname verification issues  
