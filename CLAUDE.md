@@ -281,6 +281,7 @@ ssh mk@192.168.12.100 "df -h | grep truenas"
 - Network: Stable connectivity to both Cloudflare and TrueNAS
 
 ### **Recent Changes:**
+- ✅ Removed LinkAce bookmark manager service (Aug 25, 2025)
 - ✅ Cleaned up all troubleshooting scripts (Aug 7, 2025)
 - ✅ Fixed SABnzbd hostname verification issues  
 - ✅ Configured permanent Docker permissions solution
@@ -300,6 +301,6 @@ The system is fully operational, properly configured, and ready for daily use. A
 - Each role is independently configurable via tags
 
 ---
-**Last Updated:** August 7, 2025  
+**Last Updated:** August 25, 2025  
 **Maintained By:** mk  
 **Deployment Status:** ✅ Active and Stable
