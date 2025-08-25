@@ -1,7 +1,0 @@
-# Ansible-NAS Services - Add these to your /etc/hosts file
-192.168.12.210 plex.1815.space
-192.168.12.210 radarr.1815.space
-192.168.12.210 sonarr.1815.space
-192.168.12.210 bazarr.1815.space
-192.168.12.210 prowlarr.1815.space
-192.168.12.210 sabnzbd.1815.space

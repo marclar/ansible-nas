@@ -15,7 +15,7 @@ Ansible-NAS is an Infrastructure as Code solution that replaces commercial NAS s
 
 ### **Core Infrastructure:**
 - **Ansible Control Node:** MacOS (mk@MacBook)
-- **Target Server:** Ubuntu 22.04 LTS (192.168.12.210)
+- **Target Server:** Ubuntu 22.04 LTS (192.168.12.100)
 - **Storage Backend:** TrueNAS SCALE NFS (192.168.12.227) - 8.6TB capacity
 - **Network Access:** Cloudflare Tunnel + Local network
 - **Domain:** 1815.space with wildcard SSL certificates
@@ -49,7 +49,7 @@ Ansible-NAS is an Infrastructure as Code solution that replaces commercial NAS s
 | **Prowlarr** | ✅ Running | https://prowlarr.1815.space | 9696 | Indexer Manager |
 | **SABnzbd** | ✅ Running | https://sabnzbd.1815.space | 18080 | Usenet Downloader |
 | **Transmission** | ✅ Running | https://transmission.1815.space | 9092 | Torrent Client |
-| **Traefik** | ✅ Running | http://192.168.12.210:8083 | 8083 | Reverse Proxy & SSL |
+| **Traefik** | ✅ Running | http://192.168.12.100:8083 | 8083 | Reverse Proxy & SSL |
 | **Cloudflare Tunnel** | ✅ Running | N/A | N/A | Secure Remote Access |
 | **Cloudflare DDNS** | ✅ Running | N/A | N/A | Dynamic DNS Updates |
 
@@ -216,6 +216,9 @@ roles/[app-name]/
 
 ## 🔐 Security Configuration
 
+### **CREDENTIALS AND SECRETS**
+- IMPORTANT: Keep api keys, secrets, and other credentials within the Ansible vault.  
+
 ### **Access Control:**
 - **Remote Access:** Cloudflare Access authentication required
 - **Local Access:** No authentication (trusted network)
@@ -237,12 +240,12 @@ roles/[app-name]/
 ### **Local Network Access:**
 ```bash
 # Via Traefik (add to /etc/hosts):
-192.168.12.210 home.1815.space plex.1815.space radarr.1815.space sonarr.1815.space
+192.168.12.100 home.1815.space plex.1815.space radarr.1815.space sonarr.1815.space
 
 # Direct port access:
-http://192.168.12.210:11111  # Homepage
-http://192.168.12.210:32400  # Plex
-http://192.168.12.210:7878   # Radarr
+http://192.168.12.100:11111  # Homepage
+http://192.168.12.100:32400  # Plex
+http://192.168.12.100:7878   # Radarr
 # ... etc (see service table above)
 ```
 
@@ -257,16 +260,16 @@ http://192.168.12.210:7878   # Radarr
 ### **Troubleshooting:**
 ```bash
 # Check service status
-ssh mk@192.168.12.210 "docker ps"
+ssh mk@192.168.12.100 "docker ps"
 
 # View service logs
-ssh mk@192.168.12.210 "docker logs {service_name}"
+ssh mk@192.168.12.100 "docker logs {service_name}"
 
 # Restart specific service
-ssh mk@192.168.12.210 "docker restart {service_name}"
+ssh mk@192.168.12.100 "docker restart {service_name}"
 
 # Check NFS mount
-ssh mk@192.168.12.210 "df -h | grep truenas"
+ssh mk@192.168.12.100 "df -h | grep truenas"
 ```
 
 ## 📊 Current System Status

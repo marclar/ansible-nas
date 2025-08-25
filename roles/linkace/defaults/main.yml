@@ -33,7 +33,7 @@ linkace_memory: 1g
 # docker
 linkace_container_name: "linkace"
 linkace_image_name: "linkace/linkace"
-linkace_image_version: "simple"
+linkace_image_version: "v1.14.0"
 
 # mariadb for mysql setup
 linkace_mariadb_container_name: "linkace-db"
