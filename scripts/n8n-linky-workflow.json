@@ -1,0 +1,281 @@
+{
+  "name": "Linky - iOS Share Integration",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "linky",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "responseData": "allEntries",
+        "responsePropertyName": "data",
+        "responseHeaders": {
+          "entries": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "webhook-node",
+      "name": "Webhook - Linky",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "linky-webhook",
+      "notesInFlow": true,
+      "notes": "Receives URLs and files from iOS Shortcut"
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{$json[\"type\"]}}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "url",
+              "output": 0
+            },
+            {
+              "value2": "file",
+              "output": 1
+            },
+            {
+              "value2": "text",
+              "output": 2
+            }
+          ]
+        },
+        "fallbackOutput": 3
+      },
+      "id": "switch-node",
+      "name": "Route by Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "=http://192.168.12.100:8090/api/links",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{$json[\"url\"]}}"
+            },
+            {
+              "name": "title",
+              "value": "={{$json[\"title\"]}}"
+            },
+            {
+              "name": "description",
+              "value": "={{$json[\"description\"]}}"
+            },
+            {
+              "name": "tags",
+              "value": "={{$json[\"tag\"]}}"
+            },
+            {
+              "name": "is_private",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "linkace-node",
+      "name": "Save to LinkAce",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 200],
+      "notesInFlow": true,
+      "notes": "Saves URL to LinkAce bookmark manager"
+    },
+    {
+      "parameters": {
+        "fileName": "=/tmp/linky/{{$json[\"filename\"]}}",
+        "dataPropertyName": "file"
+      },
+      "id": "file-node",
+      "name": "Save File",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "notesInFlow": true,
+      "notes": "Saves uploaded file to storage"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "notes",
+        "columns": "content,tag,source,created_at",
+        "additionalFields": {}
+      },
+      "id": "database-node",
+      "name": "Save Text Note",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [650, 400],
+      "notesInFlow": true,
+      "notes": "Saves text content as note"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "json": {
+            "status": "success",
+            "message": "Item saved successfully",
+            "type": "={{$json[\"type\"]}}",
+            "timestamp": "={{$now}}"
+          }
+        },
+        "responseCode": 200,
+        "responseHeaders": {
+          "entries": [
+            {
+              "name": "Content-Type", 
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "response-node",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Validate API Key\nconst apiKey = $input.first().headers['x-api-key'];\nconst validKey = $env.LINKY_API_KEY || 'your-secret-api-key';\n\nif (apiKey !== validKey) {\n  throw new Error('Invalid API key');\n}\n\n// Add timestamp and ID\nconst item = $input.first().json;\nitem.id = Math.random().toString(36).substr(2, 9);\nitem.processedAt = new Date().toISOString();\n\nreturn [item];"
+      },
+      "id": "validate-node",
+      "name": "Validate & Process",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [350, 300],
+      "notesInFlow": true,
+      "notes": "Validates API key and adds metadata"
+    }
+  ],
+  "connections": {
+    "webhook-node": {
+      "main": [
+        [
+          {
+            "node": "validate-node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "validate-node": {
+      "main": [
+        [
+          {
+            "node": "switch-node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "switch-node": {
+      "main": [
+        [
+          {
+            "node": "linkace-node",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "file-node",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "database-node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "linkace-node": {
+      "main": [
+        [
+          {
+            "node": "response-node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "file-node": {
+      "main": [
+        [
+          {
+            "node": "response-node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "database-node": {
+      "main": [
+        [
+          {
+            "node": "response-node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "iOS",
+      "createdAt": "2025-08-25T00:00:00.000Z"
+    },
+    {
+      "name": "LinkAce",
+      "createdAt": "2025-08-25T00:00:00.000Z"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-08-25T00:00:00.000Z",
+  "versionId": "1"
+}

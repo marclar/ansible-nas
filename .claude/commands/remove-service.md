@@ -122,7 +122,10 @@ curl -L -s -o /dev/null -w "%{http_code}" "https://{service}.1815.space"
 # Check Homepage doesn't show the service
 ```
 
-### 10. Document the Removal
+### 10. Remove any custom scripts
+If any custom Bash, Python, or MD scripts and instructions were created, remove them.
+
+### 11. Document the Removal
 Update `/Users/mk/ansible-nas/CLAUDE.md` to reflect that the service has been removed.
 
 ## Special Cases
@@ -177,6 +180,7 @@ ansible-playbook -i inventories/vm/inventory nas.yml --tags "{service}" --vault-
 - [ ] Vault entries cleaned (optional)
 - [ ] Homepage redeployed
 - [ ] Removal verified
+- [ ] Scripts and/or Markdown removed
 - [ ] Documentation updated
 
 ## Example: Removing LinkAce

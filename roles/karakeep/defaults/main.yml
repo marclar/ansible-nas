@@ -1,0 +1,43 @@
+---
+karakeep_enabled: false
+karakeep_available_externally: false
+
+# directories
+karakeep_data_directory: "{{ docker_home }}/karakeep"
+
+# network
+karakeep_port: 3000
+karakeep_hostname: "karakeep"
+
+# Docker
+karakeep_container_name: karakeep
+karakeep_image_name: "ghcr.io/karakeep-app/karakeep"
+karakeep_image_version: "release"
+
+# Meilisearch
+karakeep_meilisearch_container_name: karakeep-meilisearch
+karakeep_meilisearch_image_name: "getmeili/meilisearch"
+karakeep_meilisearch_image_version: "v1.13.3"
+karakeep_meilisearch_port: 7700
+
+# Chrome headless for scraping
+karakeep_chrome_container_name: karakeep-chrome
+karakeep_chrome_image_name: "gcr.io/zenika-hub/alpine-chrome"
+karakeep_chrome_image_version: "124"
+karakeep_chrome_port: 9222
+
+# Authentication
+karakeep_nextauth_secret: ""  # Generate with: openssl rand -base64 32
+karakeep_meili_master_key: ""  # Generate with: openssl rand -base64 32
+
+# Optional AI configuration
+karakeep_openai_api_key: ""  # Optional: For automatic tagging
+karakeep_ollama_base_url: ""  # Optional: For local AI models
+karakeep_inference_text_model: ""  # Optional: e.g., "llama2"
+karakeep_inference_image_model: ""  # Optional: e.g., "llava"
+karakeep_inference_context_length: ""  # Optional: e.g., "2048"
+
+# specs
+karakeep_memory: 1g
+karakeep_meilisearch_memory: 512m
+karakeep_chrome_memory: 512m

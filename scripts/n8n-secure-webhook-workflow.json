@@ -1,0 +1,458 @@
+{
+  "name": "Linky - Secure Public Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "linky",
+        "responseMode": "lastNode",
+        "options": {
+          "cors": {
+            "allowedOrigins": "*"
+          }
+        }
+      },
+      "id": "webhook-receiver",
+      "name": "Webhook Receiver",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "linky-public",
+      "notes": "Public endpoint - no auth required here"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ===== API KEY VALIDATION =====\nconst headers = $input.item.headers;\nconst apiKey = headers['x-api-key'] || headers['X-API-Key'] || headers['X-Api-Key'];\n\n// Get API key from environment variable\nconst validKey = $env.LINKY_API_KEY;\n\nif (!validKey) {\n  throw new Error('Server configuration error: API key not set');\n}\n\nif (!apiKey) {\n  // Return 401 Unauthorized\n  return {\n    json: {\n      error: 'Missing API key',\n      status: 401,\n      message: 'X-API-Key header is required'\n    }\n  };\n}\n\nif (apiKey !== validKey) {\n  // Return 401 Unauthorized\n  return {\n    json: {\n      error: 'Invalid API key',\n      status: 401,\n      message: 'The provided API key is invalid'\n    }\n  };\n}\n\n// ===== EXTRACT REQUEST DATA =====\nconst body = $input.item.json;\nconst sourceIP = headers['cf-connecting-ip'] || \n                 headers['x-forwarded-for'] || \n                 headers['x-real-ip'] || \n                 'unknown';\n\n// ===== VALIDATE PAYLOAD SIZE =====\nconst payloadSize = JSON.stringify(body).length;\nif (payloadSize > 100000) { // 100KB limit\n  return {\n    json: {\n      error: 'Payload too large',\n      status: 413,\n      message: `Payload size ${payloadSize} exceeds 100KB limit`\n    }\n  };\n}\n\n// ===== ADD METADATA =====\nconst enrichedData = {\n  ...body,\n  metadata: {\n    authenticated: true,\n    receivedAt: new Date().toISOString(),\n    sourceIP: sourceIP,\n    userAgent: headers['user-agent'] || 'unknown',\n    payloadSize: payloadSize\n  }\n};\n\nreturn enrichedData;"
+      },
+      "id": "validate-api-key",
+      "name": "Validate API Key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300],
+      "notes": "Validates API key and enriches data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "check-error",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-auth-error",
+      "name": "Check Auth Error",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [650, 300],
+      "notes": "Routes to error response if auth failed"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// ===== SIMPLE RATE LIMITING =====\n// Note: This is in-memory and resets on workflow restart\n// For production, use Redis or database\n\nconst ip = $input.item.metadata.sourceIP;\nconst now = Date.now();\nconst limitPerMinute = 30;\nconst windowMs = 60000; // 1 minute\n\n// Get or initialize rate limit data\nlet rateLimitData = $getWorkflowStaticData('rateLimits');\nif (!rateLimitData) {\n  rateLimitData = {};\n  $setWorkflowStaticData('rateLimits', rateLimitData);\n}\n\n// Get requests for this IP\nlet ipRequests = rateLimitData[ip] || [];\n\n// Filter to only recent requests\nipRequests = ipRequests.filter(timestamp => now - timestamp < windowMs);\n\n// Check rate limit\nif (ipRequests.length >= limitPerMinute) {\n  return {\n    json: {\n      error: 'Rate limit exceeded',\n      status: 429,\n      message: `Too many requests. Limit: ${limitPerMinute} per minute`,\n      retryAfter: Math.ceil((ipRequests[0] + windowMs - now) / 1000)\n    }\n  };\n}\n\n// Add current request\nipRequests.push(now);\nrateLimitData[ip] = ipRequests;\n$setWorkflowStaticData('rateLimits', rateLimitData);\n\n// Clean up old IPs (optional, prevents memory leak)\nconst ipsToRemove = [];\nfor (const [checkIp, requests] of Object.entries(rateLimitData)) {\n  const recentRequests = requests.filter(t => now - t < windowMs);\n  if (recentRequests.length === 0) {\n    ipsToRemove.push(checkIp);\n  }\n}\nipsToRemove.forEach(ip => delete rateLimitData[ip]);\n\nreturn $input.item;"
+      },
+      "id": "rate-limiting",
+      "name": "Rate Limiting",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 200],
+      "notes": "Simple in-memory rate limiting"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "check-rate-limit",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "Rate limit exceeded",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-rate-limit",
+      "name": "Check Rate Limit",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 200],
+      "notes": "Routes to error if rate limited"
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.type }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "url",
+              "output": 0
+            },
+            {
+              "value2": "file",
+              "output": 1
+            },
+            {
+              "value2": "text",
+              "output": 2
+            },
+            {
+              "value2": "image",
+              "output": 3
+            }
+          ]
+        },
+        "fallbackOutput": 4
+      },
+      "id": "route-by-type",
+      "name": "Route by Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [1250, 200],
+      "notes": "Routes to appropriate handler"
+    },
+    {
+      "parameters": {
+        "url": "http://192.168.12.100:8090/api/links",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "title",
+              "value": "={{ $json.title || 'Untitled' }}"
+            },
+            {
+              "name": "description",
+              "value": "={{ $json.description || '' }}"
+            },
+            {
+              "name": "tags",
+              "value": "={{ $json.tags || 'inbox,ios' }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000,
+          "batching": {
+            "batch": {
+              "batchSize": 1
+            }
+          }
+        }
+      },
+      "id": "save-to-linkace",
+      "name": "Save to LinkAce",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1450, 100],
+      "notes": "Saves URL to LinkAce",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Log the request for auditing\nconst logEntry = {\n  timestamp: new Date().toISOString(),\n  type: $input.item.type || 'unknown',\n  sourceIP: $input.item.metadata?.sourceIP || 'unknown',\n  userAgent: $input.item.metadata?.userAgent || 'unknown',\n  success: true\n};\n\nconsole.log('Webhook processed:', logEntry);\n\nreturn {\n  json: {\n    status: 'success',\n    message: `${$input.item.type || 'Item'} saved successfully`,\n    timestamp: logEntry.timestamp,\n    id: Math.random().toString(36).substr(2, 9)\n  }\n};"
+      },
+      "id": "log-success",
+      "name": "Log & Success Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 200],
+      "notes": "Logs request and returns success"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "json": "={{ $json }}"
+        },
+        "responseCode": "={{ $json.status || 200 }}",
+        "responseHeaders": {
+          "entries": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-RateLimit-Limit",
+              "value": "30"
+            },
+            {
+              "name": "X-RateLimit-Remaining",
+              "value": "={{ 30 - ($node['rate-limiting'].json.requestCount || 0) }}"
+            }
+          ]
+        }
+      },
+      "id": "send-response",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1850, 300],
+      "notes": "Final response to client"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "json": "={{ $json }}"
+        },
+        "responseCode": "={{ $json.status }}",
+        "responseHeaders": {
+          "entries": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "WWW-Authenticate",
+              "value": "API-Key realm=\"n8n Webhook\""
+            }
+          ]
+        }
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 500],
+      "notes": "Returns error to client"
+    },
+    {
+      "parameters": {
+        "content": "## File Handler\nAdd nodes here to:\n- Store file to disk/S3\n- Save metadata to database\n- Process images",
+        "height": 150,
+        "width": 200
+      },
+      "id": "file-placeholder",
+      "name": "File Handler",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "content": "## Text Handler\nAdd nodes here to:\n- Save as note\n- Create task\n- Store in database",
+        "height": 150,
+        "width": 200
+      },
+      "id": "text-placeholder",
+      "name": "Text Handler",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "content": "## Image Handler\nAdd nodes here to:\n- Store image\n- Generate thumbnail\n- Extract EXIF data",
+        "height": 150,
+        "width": 200
+      },
+      "id": "image-placeholder",
+      "name": "Image Handler",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1450, 400]
+    }
+  ],
+  "connections": {
+    "webhook-receiver": {
+      "main": [
+        [
+          {
+            "node": "validate-api-key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "validate-api-key": {
+      "main": [
+        [
+          {
+            "node": "check-auth-error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check-auth-error": {
+      "main": [
+        [
+          {
+            "node": "error-response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "rate-limiting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rate-limiting": {
+      "main": [
+        [
+          {
+            "node": "check-rate-limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check-rate-limit": {
+      "main": [
+        [
+          {
+            "node": "error-response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "route-by-type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "route-by-type": {
+      "main": [
+        [
+          {
+            "node": "save-to-linkace",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "log-success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "log-success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "log-success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "log-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save-to-linkace": {
+      "main": [
+        [
+          {
+            "node": "log-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log-success": {
+      "main": [
+        [
+          {
+            "node": "send-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": {
+    "rateLimits": {}
+  },
+  "tags": [
+    {
+      "name": "webhook",
+      "createdAt": "2025-08-25"
+    },
+    {
+      "name": "public",
+      "createdAt": "2025-08-25"
+    },
+    {
+      "name": "ios",
+      "createdAt": "2025-08-25"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-08-25T00:00:00.000Z",
+  "versionId": "secure-v1"
+}

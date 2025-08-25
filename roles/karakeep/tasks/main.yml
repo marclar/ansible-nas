@@ -1,0 +1,96 @@
+---
+- name: Start Karakeep
+  block:
+    - name: Create Karakeep Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - "{{ karakeep_data_directory }}"
+        - "{{ karakeep_data_directory }}/data"
+        - "{{ karakeep_data_directory }}/meilisearch"
+
+    - name: Create Karakeep Chrome container
+      community.docker.docker_container:
+        name: "{{ karakeep_chrome_container_name }}"
+        image: "{{ karakeep_chrome_image_name }}:{{ karakeep_chrome_image_version }}"
+        pull: true
+        command:
+          - "--no-sandbox"
+          - "--disable-gpu"
+          - "--disable-dev-shm-usage"
+          - "--remote-debugging-address=0.0.0.0"
+          - "--remote-debugging-port=9222"
+          - "--hide-scrollbars"
+        restart_policy: unless-stopped
+        memory: "{{ karakeep_chrome_memory }}"
+        labels:
+          traefik.enable: "false"
+
+    - name: Create Karakeep Meilisearch container
+      community.docker.docker_container:
+        name: "{{ karakeep_meilisearch_container_name }}"
+        image: "{{ karakeep_meilisearch_image_name }}:{{ karakeep_meilisearch_image_version }}"
+        pull: true
+        volumes:
+          - "{{ karakeep_data_directory }}/meilisearch:/meili_data:rw"
+        env:
+          MEILI_NO_ANALYTICS: "true"
+          MEILI_MASTER_KEY: "{{ karakeep_meili_master_key }}"
+        restart_policy: unless-stopped
+        memory: "{{ karakeep_meilisearch_memory }}"
+        labels:
+          traefik.enable: "false"
+
+    - name: Create Karakeep container
+      community.docker.docker_container:
+        name: "{{ karakeep_container_name }}"
+        image: "{{ karakeep_image_name }}:{{ karakeep_image_version }}"
+        pull: true
+        volumes:
+          - "{{ karakeep_data_directory }}/data:/data:rw"
+        ports:
+          - "{{ karakeep_port }}:3000"
+        links:
+          - "{{ karakeep_meilisearch_container_name }}:meilisearch"
+          - "{{ karakeep_chrome_container_name }}:chrome"
+        env:
+          DATA_DIR: "/data"
+          NEXTAUTH_SECRET: "{{ karakeep_nextauth_secret }}"
+          NEXTAUTH_URL: "https://{{ karakeep_hostname }}.{{ ansible_nas_domain }}"
+          MEILI_ADDR: "http://meilisearch:7700"
+          MEILI_MASTER_KEY: "{{ karakeep_meili_master_key }}"
+          BROWSER_WEB_URL: "http://chrome:9222"
+          OPENAI_API_KEY: "{{ karakeep_openai_api_key | default(omit) }}"
+          OLLAMA_BASE_URL: "{{ karakeep_ollama_base_url | default(omit) }}"
+          INFERENCE_TEXT_MODEL: "{{ karakeep_inference_text_model | default(omit) }}"
+          INFERENCE_IMAGE_MODEL: "{{ karakeep_inference_image_model | default(omit) }}"
+          INFERENCE_CONTEXT_LENGTH: "{{ karakeep_inference_context_length | default(omit) }}"
+        restart_policy: unless-stopped
+        memory: "{{ karakeep_memory }}"
+        labels:
+          traefik.enable: "{{ karakeep_available_externally | string }}"
+          traefik.http.routers.karakeep.rule: "Host(`{{ karakeep_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.karakeep.entrypoints: "web"
+          traefik.http.services.karakeep.loadbalancer.server.port: "3000"
+
+  when: karakeep_enabled is true
+
+- name: Stop Karakeep
+  block:
+    - name: Stop Karakeep container
+      community.docker.docker_container:
+        name: "{{ karakeep_container_name }}"
+        state: absent
+
+    - name: Stop Karakeep Meilisearch container
+      community.docker.docker_container:
+        name: "{{ karakeep_meilisearch_container_name }}"
+        state: absent
+
+    - name: Stop Karakeep Chrome container
+      community.docker.docker_container:
+        name: "{{ karakeep_chrome_container_name }}"
+        state: absent
+
+  when: karakeep_enabled is false
