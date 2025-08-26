@@ -25,11 +25,10 @@
         memory: "{{ unmanic_memory if unmanic_memory else omit }}"
         volumes:
           - "{{ unmanic_config_directory }}:/config:rw"
-          - "{{ unmanic_library_directory }}:/library:rw"
+          - "{{ nfs_mount_point }}:/library:rw"
           - "{{ unmanic_tmp_directory }}:/tmp/unmanic:rw"
           - "{{ unmanic_cache_directory }}:/home/unmanic/.unmanic:rw"
-          - "{{ unmanic_movies_path }}:/media/movies:rw"
-          - "{{ unmanic_tv_path }}:/media/tv:rw"
+          - "{{ nfs_mount_point }}:/mnt/truenas-media:rw"
         ports:
           - "{{ unmanic_port }}:8888"
         env:
