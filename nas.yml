@@ -165,6 +165,10 @@
       tags:
         - linkace
 
+    - role: listmonk
+      tags:
+        - listmonk
+
     - role: karakeep
       tags:
         - karakeep
@@ -304,6 +308,10 @@
     - role: nomad
       tags:
         - nomad
+
+    - role: nullboard
+      tags:
+        - nullboard
 
     - role: nzbget
       tags:

@@ -1,0 +1,47 @@
+---
+- name: Start Nullboard
+  block:
+    - name: Create Nullboard Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      with_items:
+        - "{{ nullboard_data_directory }}"
+
+    - name: Download Nullboard HTML
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/apankrat/nullboard/master/nullboard.html
+        dest: "{{ nullboard_data_directory }}/index.html"
+        mode: '0644'
+
+    - name: Create Nullboard Docker Container (nginx)
+      community.docker.docker_container:
+        name: "{{ nullboard_container_name }}"
+        image: "nginx:alpine"
+        pull: true
+        state: started
+        restart_policy: unless-stopped
+        memory: "{{ nullboard_memory if nullboard_memory else omit }}"
+        volumes:
+          - "{{ nullboard_data_directory }}/index.html:/usr/share/nginx/html/index.html:ro"
+        ports:
+          - "{{ nullboard_port }}:80"
+        env:
+          TZ: "{{ ansible_nas_timezone }}"
+        labels:
+          traefik.enable: "{{ nullboard_available_externally | string }}"
+          traefik.http.routers.nullboard.rule: "Host(`{{ nullboard_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.nullboard.entrypoints: "web"
+          traefik.http.services.nullboard.loadbalancer.server.port: "80"
+
+  when: nullboard_enabled is true
+
+- name: Stop Nullboard
+  block:
+    - name: Stop Nullboard Container
+      community.docker.docker_container:
+        name: "{{ nullboard_container_name }}"
+        state: absent
+
+  when: nullboard_enabled is false

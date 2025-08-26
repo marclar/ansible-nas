@@ -1,0 +1,18 @@
+---
+nullboard_enabled: false
+nullboard_available_externally: false
+
+# directories
+nullboard_data_directory: "{{ docker_home }}/nullboard"
+
+# network
+nullboard_port: "8100"
+nullboard_hostname: "nullboard"
+
+# docker
+nullboard_container_name: nullboard
+nullboard_image_name: "luismedel/nullboard"
+nullboard_image_tag: "latest"
+
+# specs
+nullboard_memory: 256m

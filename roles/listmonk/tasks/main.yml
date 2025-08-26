@@ -1,0 +1,79 @@
+---
+- name: Start Listmonk
+  block:
+    - name: Create Listmonk Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      with_items:
+        - "{{ listmonk_data_directory }}"
+        - "{{ listmonk_db_directory }}"
+
+    - name: Create Listmonk Database Container
+      community.docker.docker_container:
+        name: "{{ listmonk_db_container_name }}"
+        image: "{{ listmonk_db_image }}"
+        pull: true
+        state: started
+        restart_policy: unless-stopped
+        volumes:
+          - "{{ listmonk_db_directory }}:/var/lib/postgresql/data:rw"
+        env:
+          POSTGRES_USER: "{{ listmonk_db_user }}"
+          POSTGRES_PASSWORD: "{{ listmonk_db_password }}"
+          POSTGRES_DB: "{{ listmonk_db_name }}"
+        labels:
+          traefik.enable: "false"
+
+    - name: Wait for database to be ready
+      ansible.builtin.wait_for:
+        timeout: 30
+
+    - name: Create Listmonk Container
+      community.docker.docker_container:
+        name: "{{ listmonk_container_name }}"
+        image: "{{ listmonk_image_name }}:{{ listmonk_image_tag }}"
+        pull: true
+        state: started
+        restart_policy: unless-stopped
+        memory: "{{ listmonk_memory if listmonk_memory else omit }}"
+        volumes:
+          - "{{ listmonk_data_directory }}:/listmonk/uploads:rw"
+        ports:
+          - "{{ listmonk_port }}:9000"
+        env:
+          TZ: "{{ ansible_nas_timezone }}"
+          LISTMONK_app__address: "0.0.0.0:9000"
+          LISTMONK_db__host: "{{ listmonk_db_container_name }}"
+          LISTMONK_db__port: "5432"
+          LISTMONK_db__user: "{{ listmonk_db_user }}"
+          LISTMONK_db__password: "{{ listmonk_db_password }}"
+          LISTMONK_db__database: "{{ listmonk_db_name }}"
+          LISTMONK_db__ssl_mode: "disable"
+          LISTMONK_admin__username: "{{ listmonk_admin_user }}"
+          LISTMONK_admin__password: "{{ listmonk_admin_password }}"
+        links:
+          - "{{ listmonk_db_container_name }}"
+        labels:
+          traefik.enable: "{{ listmonk_available_externally | string }}"
+          traefik.http.routers.listmonk.rule: "Host(`{{ listmonk_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.listmonk.entrypoints: "web"
+          traefik.http.services.listmonk.loadbalancer.server.port: "9000"
+        command: ["sh", "-c", "./listmonk --install --yes && ./listmonk"]
+
+  when: listmonk_enabled is true
+
+- name: Stop Listmonk
+  block:
+    - name: Stop Listmonk Container
+      community.docker.docker_container:
+        name: "{{ listmonk_container_name }}"
+        state: absent
+
+    - name: Stop Listmonk Database Container
+      community.docker.docker_container:
+        name: "{{ listmonk_db_container_name }}"
+        state: absent
+
+  when: listmonk_enabled is false
