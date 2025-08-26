@@ -49,7 +49,6 @@ Ansible-NAS is an Infrastructure as Code solution that replaces commercial NAS s
 | **Prowlarr** | ✅ Running | https://prowlarr.1815.space | 9696 | Indexer Manager |
 | **SABnzbd** | ✅ Running | https://sabnzbd.1815.space | 18080 | Usenet Downloader |
 | **Transmission** | ✅ Running | https://transmission.1815.space | 9092 | Torrent Client |
-| **Tdarr** | ✅ Running | https://tdarr.1815.space | 8265 | Distributed Transcoding System |
 | **Unmanic** | ✅ Running | https://unmanic.1815.space | 8889 | Automated Media Library Optimizer |
 | **Traefik** | ✅ Running | http://192.168.12.100:8083 | 8083 | Reverse Proxy & SSL |
 | **Cloudflare Tunnel** | ✅ Running | N/A | N/A | Secure Remote Access |
@@ -283,8 +282,8 @@ ssh mk@192.168.12.100 "df -h | grep truenas"
 - Network: Stable connectivity to both Cloudflare and TrueNAS
 
 ### **Recent Changes:**
+- ✅ Removed Tdarr distributed transcoding system (Aug 25, 2025)
 - ✅ Installed Unmanic automated media library optimizer (Aug 25, 2025)
-- ✅ Installed Tdarr distributed transcoding system (Aug 25, 2025)
 - ✅ Removed Organizr, Emby, YouTube-DL, and TiddlyWiki services (Aug 25, 2025)
 - ✅ Removed LinkAce bookmark manager service (Aug 25, 2025)
 - ✅ Cleaned up all troubleshooting scripts (Aug 7, 2025)
