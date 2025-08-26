@@ -417,6 +417,10 @@
       tags:
         - tautulli
 
+    - role: unmanic
+      tags:
+        - unmanic
+
     - role: thelounge
       tags:
         - thelounge

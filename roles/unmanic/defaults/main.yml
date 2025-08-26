@@ -1,0 +1,33 @@
+---
+unmanic_enabled: false
+unmanic_available_externally: false
+
+# directories
+unmanic_data_directory: "{{ docker_home }}/unmanic"
+unmanic_config_directory: "{{ unmanic_data_directory }}/config"
+unmanic_library_directory: "{{ unmanic_data_directory }}/library"
+unmanic_tmp_directory: "{{ unmanic_data_directory }}/tmp"
+unmanic_cache_directory: "{{ unmanic_data_directory }}/cache"
+
+# network
+unmanic_port: "8889"
+unmanic_hostname: "unmanic"
+
+# media paths
+unmanic_movies_path: "{{ movies_root }}"
+unmanic_tv_path: "{{ tv_root }}"
+
+# docker
+unmanic_container_name: "unmanic"
+unmanic_image_name: "josh5/unmanic"
+unmanic_image_tag: "latest"
+
+# user/group
+unmanic_user_id: "1000"
+unmanic_group_id: "1000"
+
+# timezone
+unmanic_timezone: "{{ ansible_nas_timezone }}"
+
+# memory limit (optional)
+unmanic_memory: false

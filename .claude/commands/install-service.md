@@ -18,6 +18,8 @@ Add the service configuration to your inventory file `inventories/vm/group_vars/
 {service}_available_externally: true  # If you want external access via Cloudflare
 ```
 
+IMPORTANT: if there's no available role for the service, prefer creating a new role over creating a one-off installation script.
+
 ### 2. Configure Service-Specific Settings (if needed)
 Some services require additional configuration. Check the role's defaults file:
 ```bash
