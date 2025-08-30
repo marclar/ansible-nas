@@ -1,9 +1,9 @@
 # Ansible-NAS Project State Summary
 
-**Date:** August 14, 2025  
+**Date:** August 30, 2025  
 **Project:** Home Media Server using Ansible-NAS  
-**Domain:** Configured in inventory  
-**Infrastructure:** Local server + NFS storage
+**Domain:** 1815.space  
+**Infrastructure:** Physical server + TrueNAS NFS storage
 
 ## 🎯 Project Overview
 
@@ -15,7 +15,7 @@ Ansible-NAS is an Infrastructure as Code solution that replaces commercial NAS s
 
 ### **Core Infrastructure:**
 - **Ansible Control Node:** MacOS (mk@MacBook)
-- **Target Server:** Ubuntu 22.04 LTS (192.168.12.100)
+- **Target Server:** Ubuntu 22.04 LTS (192.168.12.208)
 - **Storage Backend:** TrueNAS SCALE NFS (192.168.12.227) - 8.6TB capacity
 - **Network Access:** Cloudflare Tunnel + Local network
 - **Domain:** 1815.space with wildcard SSL certificates
@@ -37,28 +37,22 @@ Ansible-NAS is an Infrastructure as Code solution that replaces commercial NAS s
 
 ## 🚀 Current Deployed Services
 
-### **Active Services (All Operational):**
+### **Active Services (Currently Running):**
 
 | Service | Status | URL | Port | Purpose |
-|---------|--------|-----|------|---------|
-| **Homepage** | ✅ Running | https://home.1815.space | 11111 | Dashboard & Service Directory |
+|---------|--------|-----|------|---------| 
+| **Homepage** | ✅ Running (healthy) | https://home.1815.space | 11111 | Dashboard & Service Directory |
 | **Plex** | ✅ Running | https://plex.1815.space | 32400 | Media Server |
 | **Radarr** | ✅ Running | https://radarr.1815.space | 7878 | Movie Collection Manager |
 | **Sonarr** | ✅ Running | https://sonarr.1815.space | 8989 | TV Series Collection Manager |
-| **Bazarr** | ✅ Running | https://bazarr.1815.space | 6767 | Subtitle Manager |
-| **Prowlarr** | ✅ Running | https://prowlarr.1815.space | 9696 | Indexer Manager |
-| **SABnzbd** | ✅ Running | https://sabnzbd.1815.space | 18080 | Usenet Downloader |
-| **Transmission** | ✅ Running | https://transmission.1815.space | 9092 | Torrent Client |
 | **Unmanic** | ✅ Running | https://unmanic.1815.space | 8889 | Automated Media Library Optimizer |
-| **Traefik** | ✅ Running | http://192.168.12.100:8083 | 8083 | Reverse Proxy & SSL |
 | **Cloudflare Tunnel** | ✅ Running | N/A | N/A | Secure Remote Access |
-| **Cloudflare DDNS** | ✅ Running | N/A | N/A | Dynamic DNS Updates |
 
 ### **Service Health Status:**
-- All containers running without issues
-- External access working through Cloudflare Tunnel
+- 6 Docker containers running
+- External access working through Cloudflare Tunnel with Access authentication
 - Local direct access available on all services
-- Homepage dashboard showing all services with working widgets
+- Cloudflare tunnel successfully connected with 4 connections established
 
 ## 💾 Storage Configuration
 
@@ -66,7 +60,7 @@ Ansible-NAS is an Infrastructure as Code solution that replaces commercial NAS s
 ```bash
 Source: 192.168.12.227:/mnt/pool0/media
 Mount: /mnt/truenas-media
-Size: 8.6TB (7.2GB used, 99% available)
+Size: 8.6TB (738GB used, 91% available)
 Type: NFSv3, auto-mounted via /etc/fstab
 ```
 
@@ -102,9 +96,15 @@ Type: NFSv3, auto-mounted via /etc/fstab
 # Use the streamlined deployment script
 ./deploy.sh  # Interactive deployment with options
 
-# Or direct Ansible commands:
-ansible-playbook -i inventories/production/inventory nas.yml
-ansible-playbook -i inventories/production/inventory nas.yml --tags "homepage,plex"
+# Or direct Ansible commands (always use vault password file):
+ansible-playbook -i inventories/production/inventory nas.yml --vault-password-file=.vault_pass
+ansible-playbook -i inventories/production/inventory nas.yml --vault-password-file=.vault_pass --tags "homepage,plex"
+
+# Deploy specific services by tag:
+ansible-playbook -i inventories/production/inventory nas.yml --vault-password-file=.vault_pass --tags "radarr,sonarr"
+
+# Check mode (dry run):
+ansible-playbook -i inventories/production/inventory nas.yml --vault-password-file=.vault_pass --check
 ```
 
 ## Core Commands
@@ -217,8 +217,33 @@ roles/[app-name]/
 
 ## 🔐 Security Configuration
 
-### **CREDENTIALS AND SECRETS**
-- IMPORTANT: Keep api keys, secrets, and other credentials within the Ansible vault.  
+### **CREDENTIALS AND SECRETS MANAGEMENT**
+
+#### **Ansible Vault Configuration:**
+- **All secrets are stored in encrypted Ansible vault files**
+- **Vault file location:** `inventories/production/group_vars/nas/vault.yml`
+- **Vault password file:** `.vault_pass` (in project root, gitignored)
+- **Never commit secrets in plain text** - always use the vault
+
+#### **Managing Secrets:**
+```bash
+# View vault contents
+ansible-vault view inventories/production/group_vars/nas/vault.yml --vault-password-file=.vault_pass
+
+# Edit vault (opens in editor)
+ansible-vault edit inventories/production/group_vars/nas/vault.yml --vault-password-file=.vault_pass
+
+# Decrypt to temp file (for complex edits)
+ansible-vault decrypt inventories/production/group_vars/nas/vault.yml --vault-password-file=.vault_pass --output=/tmp/vault.yml
+# Edit the file, then re-encrypt:
+ansible-vault encrypt /tmp/vault.yml --vault-password-file=.vault_pass --output=inventories/production/group_vars/nas/vault.yml
+```
+
+#### **Stored Secrets Include:**
+- Cloudflare tunnel token
+- Media server API keys (Plex, Radarr, Sonarr, SABnzbd)
+- VPN credentials (if configured)
+- Service-specific authentication tokens  
 
 ### **Access Control:**
 - **Remote Access:** Cloudflare Access authentication required
@@ -240,13 +265,15 @@ roles/[app-name]/
 
 ### **Local Network Access:**
 ```bash
-# Via Traefik (add to /etc/hosts):
-192.168.12.100 home.1815.space plex.1815.space radarr.1815.space sonarr.1815.space
+# Via hosts file (add to /etc/hosts):
+192.168.12.208 home.1815.space plex.1815.space radarr.1815.space sonarr.1815.space
 
 # Direct port access:
-http://192.168.12.100:11111  # Homepage
-http://192.168.12.100:32400  # Plex
-http://192.168.12.100:7878   # Radarr
+http://192.168.12.208:11111  # Homepage
+http://192.168.12.208:32400  # Plex
+http://192.168.12.208:7878   # Radarr
+http://192.168.12.208:8989   # Sonarr
+http://192.168.12.208:8889   # Unmanic
 # ... etc (see service table above)
 ```
 
@@ -261,36 +288,35 @@ http://192.168.12.100:7878   # Radarr
 ### **Troubleshooting:**
 ```bash
 # Check service status
-ssh mk@192.168.12.100 "docker ps"
+ssh mk@192.168.12.208 "docker ps"
 
 # View service logs
-ssh mk@192.168.12.100 "docker logs {service_name}"
+ssh mk@192.168.12.208 "docker logs {service_name}"
 
 # Restart specific service
-ssh mk@192.168.12.100 "docker restart {service_name}"
+ssh mk@192.168.12.208 "docker restart {service_name}"
 
 # Check NFS mount
-ssh mk@192.168.12.100 "df -h | grep truenas"
+ssh mk@192.168.12.208 "df -h | grep truenas"
 ```
 
 ## 📊 Current System Status
 
 ### **Resource Usage:**
-- Docker containers: 11 running
+- Docker containers: 6 running
 - System load: Normal
-- NFS storage: 99% available (8.6TB capacity)
+- NFS storage: 91% available (8.6TB capacity, 738GB used)
 - Network: Stable connectivity to both Cloudflare and TrueNAS
 
 ### **Recent Changes:**
+- ✅ **Migrated to new physical server** (192.168.12.208) (Aug 30, 2025)
+- ✅ **Updated Cloudflare tunnel token** and re-established secure connection (Aug 30, 2025)
+- ✅ **Configured SSH key-only authentication** with password auth disabled (Aug 30, 2025)
+- ✅ **Set up passwordless sudo** for automation user (Aug 30, 2025)
 - ✅ Removed Tdarr distributed transcoding system (Aug 25, 2025)
 - ✅ Installed Unmanic automated media library optimizer (Aug 25, 2025)
 - ✅ Removed Organizr, Emby, YouTube-DL, and TiddlyWiki services (Aug 25, 2025)
 - ✅ Removed LinkAce bookmark manager service (Aug 25, 2025)
-- ✅ Cleaned up all troubleshooting scripts (Aug 7, 2025)
-- ✅ Fixed SABnzbd hostname verification issues  
-- ✅ Configured permanent Docker permissions solution
-- ✅ Removed Cloudflare authentication for local access
-- ✅ Established stable NFS mount configuration
 
 ## ✅ Project Status: **PRODUCTION READY**
 
@@ -305,6 +331,6 @@ The system is fully operational, properly configured, and ready for daily use. A
 - Each role is independently configurable via tags
 
 ---
-**Last Updated:** August 25, 2025  
+**Last Updated:** August 30, 2025  
 **Maintained By:** mk  
-**Deployment Status:** ✅ Active and Stable
+**Deployment Status:** ✅ Active and Stable on Physical Server (192.168.12.208)
