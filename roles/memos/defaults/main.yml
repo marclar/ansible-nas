@@ -1,0 +1,18 @@
+---
+memos_enabled: false
+memos_available_externally: false
+
+# directories
+memos_data_directory: "{{ docker_home }}/memos"
+
+# network
+memos_hostname: "memos"
+memos_port: "5230"
+
+# docker
+memos_container_name: "memos"
+memos_image_name: "ghcr.io/usememos/memos"
+memos_image_tag: "stable"
+
+# specs
+memos_memory: "512m"

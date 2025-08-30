@@ -140,6 +140,24 @@ Ansible NAS doesn't set up your disk partitions, primarily because getting it wr
 
 See [Installation](https://ansible-nas.io/docs/getting-started/installation/).
 
+### Deployment Options
+
+Ansible-NAS supports multiple deployment configurations:
+
+- **Production (VM)**: Deploy to a VM running on your local machine - see `inventories/production/`
+- **Standalone PC**: Deploy directly to a standalone Ubuntu PC - see `inventories/standalone/`
+
+For migrating from VM to standalone PC, see [Migration Guide](MIGRATION_TO_STANDALONE.md).
+
+To use the standalone deployment:
+```bash
+# Configure your network settings
+vim inventories/standalone/group_vars/nas/network.yml
+
+# Run the deployment
+./deploy-standalone.sh
+```
+
 ## Documentation
 
 You can read the docs [here](https://ansible-nas.io). PRs for more documentation always welcome!

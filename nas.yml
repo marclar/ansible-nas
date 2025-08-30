@@ -73,6 +73,10 @@
       tags:
         - booksonic
 
+    - role: boxarr
+      tags:
+        - boxarr
+
     - role: calibre
       tags:
         - calibre
@@ -441,6 +445,10 @@
       tags:
         - tiddlywiki
 
+    - role: memos
+      tags:
+        - memos
+
     - role: timemachine
       tags:
         - timemachine
@@ -469,6 +477,10 @@
     - role: utorrent
       tags:
         - utorrent
+
+    - role: rtorrent
+      tags:
+        - rtorrent
 
     - role: valheim
       tags:

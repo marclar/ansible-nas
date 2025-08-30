@@ -13,6 +13,8 @@
         name: "{{ nzbget_container_name }}"
         image: "{{ nzbget_image_name }}:{{ nzbget_image_version }}"
         pull: true
+        networks:
+          - name: ansible-nas
         volumes:
           - "{{ nzbget_download_directory }}:/downloads:rw"
           - "{{ nzbget_data_directory }}:/config:rw"
@@ -28,6 +30,7 @@
         labels:
           traefik.enable: "{{ nzbget_available_externally | string }}"
           traefik.http.routers.nzbget.rule: "Host(`{{ nzbget_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.nzbget.entrypoints: "web"
           traefik.http.services.nzbget.loadbalancer.server.port: "6789"
   when: nzbget_enabled is true
 

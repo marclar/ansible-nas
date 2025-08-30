@@ -1,0 +1,10 @@
+---
+# Docker Compose network configuration for Ansible-NAS
+# This creates a custom network for all containers to communicate using container names
+
+version: '3.8'
+
+networks:
+  ansible-nas:
+    external: true
+    name: ansible-nas

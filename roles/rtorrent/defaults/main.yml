@@ -1,0 +1,25 @@
+---
+rtorrent_enabled: false
+rtorrent_available_externally: false
+
+# directories
+rtorrent_data_directory: "{{ docker_home }}/rtorrent"
+rtorrent_download_directory: "{{ downloads_root }}"
+
+# network
+rtorrent_hostname: "rtorrent"
+rtorrent_port_http: "8112"  # ruTorrent web UI port
+rtorrent_port_rt: "6881"    # BitTorrent port
+rtorrent_port_dht: "6881"   # DHT port
+
+# docker
+rtorrent_container_name: "rtorrent"
+rtorrent_image_name: "crazymax/rtorrent-rutorrent"
+rtorrent_image_tag: "latest"
+
+# specs
+rtorrent_memory: "1g"
+
+# user/group
+rtorrent_user_id: "1000"
+rtorrent_group_id: "1000"

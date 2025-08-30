@@ -1,0 +1,21 @@
+---
+boxarr_enabled: false
+boxarr_available_externally: false
+
+# directories
+boxarr_data_directory: "{{ docker_home }}/boxarr"
+
+# network
+boxarr_hostname: "boxarr"
+boxarr_port: "8888"
+
+# docker
+boxarr_container_name: "boxarr"
+boxarr_image_name: "ghcr.io/iongpt/boxarr"
+boxarr_image_tag: "latest"
+
+# specs
+boxarr_memory: "256m"
+
+# Radarr integration (will be configured via web UI)
+# boxarr_radarr_url: "http://{{ ansible_nas_server_ip }}:7878"

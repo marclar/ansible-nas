@@ -26,6 +26,13 @@
     mode: 0755
     state: directory
 
+- name: Create Ansible-NAS Docker network
+  community.docker.docker_network:
+    name: ansible-nas
+    driver: bridge
+    state: present
+  tags: docker-network
+
 - name: Add user account to Docker group
   ansible.builtin.user:
     name: "{{ ansible_nas_user }}"
