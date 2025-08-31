@@ -1,6 +1,6 @@
 # Ansible-NAS Project State Summary
 
-**Date:** August 30, 2025  
+**Date:** August 31, 2025  
 **Project:** Home Media Server using Ansible-NAS  
 **Domain:** 1815.space  
 **Infrastructure:** Physical server + TrueNAS NFS storage
@@ -266,7 +266,7 @@ ansible-vault encrypt /tmp/vault.yml --vault-password-file=.vault_pass --output=
 ### **Local Network Access:**
 ```bash
 # Via hosts file (add to /etc/hosts):
-192.168.12.208 home.1815.space plex.1815.space radarr.1815.space sonarr.1815.space
+192.168.12.208 home.1815.space plex.1815.space radarr.1815.space sonarr.1815.space unmanic.1815.space
 
 # Direct port access:
 http://192.168.12.208:11111  # Homepage
@@ -274,7 +274,6 @@ http://192.168.12.208:32400  # Plex
 http://192.168.12.208:7878   # Radarr
 http://192.168.12.208:8989   # Sonarr
 http://192.168.12.208:8889   # Unmanic
-# ... etc (see service table above)
 ```
 
 ## 🔄 Maintenance Procedures
@@ -309,6 +308,8 @@ ssh mk@192.168.12.208 "df -h | grep truenas"
 - Network: Stable connectivity to both Cloudflare and TrueNAS
 
 ### **Recent Changes:**
+- ✅ **Configured Unmanic service** in Homepage dashboard and Traefik routing (Aug 31, 2025)
+- ✅ **Updated Homepage layout** with improved service organization (Aug 31, 2025)
 - ✅ **Migrated to new physical server** (192.168.12.208) (Aug 30, 2025)
 - ✅ **Updated Cloudflare tunnel token** and re-established secure connection (Aug 30, 2025)
 - ✅ **Configured SSH key-only authentication** with password auth disabled (Aug 30, 2025)
@@ -331,6 +332,6 @@ The system is fully operational, properly configured, and ready for daily use. A
 - Each role is independently configurable via tags
 
 ---
-**Last Updated:** August 30, 2025  
+**Last Updated:** August 31, 2025  
 **Maintained By:** mk  
 **Deployment Status:** ✅ Active and Stable on Physical Server (192.168.12.208)
