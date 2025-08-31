@@ -482,6 +482,10 @@
       tags:
         - rtorrent
 
+    - role: qbittorrent
+      tags:
+        - qbittorrent
+
     - role: valheim
       tags:
         - valheim

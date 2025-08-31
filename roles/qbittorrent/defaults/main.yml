@@ -1,0 +1,22 @@
+---
+qbittorrent_enabled: false
+qbittorrent_available_externally: false
+
+# directories
+qbittorrent_data_directory: "{{ docker_home }}/qbittorrent"
+qbittorrent_download_directory: "{{ downloads_root }}"
+
+# network
+qbittorrent_port: "8080"
+qbittorrent_hostname: "qbittorrent"
+
+# VPN
+qbittorrent_use_vpn: false
+
+# specs
+qbittorrent_memory: 1g
+qbittorrent_container_name: qbittorrent
+qbittorrent_image_name: "lscr.io/linuxserver/qbittorrent"
+qbittorrent_image_version: latest
+qbittorrent_user_id: "1000"
+qbittorrent_group_id: "1000"

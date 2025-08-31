@@ -1,0 +1,65 @@
+---
+- name: Start qBittorrent
+  block:
+    - name: Create qBittorrent Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - "{{ qbittorrent_data_directory }}"
+
+    - name: qBittorrent without VPN
+      community.docker.docker_container:
+        name: "{{ qbittorrent_container_name }}"
+        image: "{{ qbittorrent_image_name }}:{{ qbittorrent_image_version }}"
+        pull: true
+        networks:
+          - name: ansible-nas
+        volumes:
+          - "{{ qbittorrent_data_directory }}:/config:rw"
+          - "{{ qbittorrent_download_directory }}:/downloads:rw"
+        ports:
+          - "{{ qbittorrent_port }}:8080"
+          - "6881:6881"
+          - "6881:6881/udp"
+        env:
+          TZ: "{{ ansible_nas_timezone }}"
+          PUID: "{{ qbittorrent_user_id }}"
+          PGID: "{{ qbittorrent_group_id }}"
+          WEBUI_PORT: "8080"
+        restart_policy: unless-stopped
+        memory: "{{ qbittorrent_memory }}"
+        labels:
+          traefik.enable: "{{ qbittorrent_available_externally | string }}"
+          traefik.http.routers.qbittorrent.rule: "Host(`{{ qbittorrent_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.qbittorrent.entrypoints: "web"
+          traefik.http.services.qbittorrent.loadbalancer.server.port: "8080"
+      when: not qbittorrent_use_vpn
+
+    - name: qBittorrent with VPN
+      community.docker.docker_container:
+        name: "{{ qbittorrent_container_name }}"
+        image: "{{ qbittorrent_image_name }}:{{ qbittorrent_image_version }}"
+        pull: true
+        network_mode: "container:gluetun"
+        volumes:
+          - "{{ qbittorrent_data_directory }}:/config:rw"
+          - "{{ qbittorrent_download_directory }}:/downloads:rw"
+        env:
+          TZ: "{{ ansible_nas_timezone }}"
+          PUID: "{{ qbittorrent_user_id }}"
+          PGID: "{{ qbittorrent_group_id }}"
+          WEBUI_PORT: "8080"
+        restart_policy: unless-stopped
+        memory: "{{ qbittorrent_memory }}"
+      when: qbittorrent_use_vpn
+
+  when: qbittorrent_enabled is true
+
+- name: Stop qBittorrent
+  block:
+    - name: Stop qBittorrent
+      community.docker.docker_container:
+        name: "{{ qbittorrent_container_name }}"
+        state: absent
+  when: qbittorrent_enabled is false
