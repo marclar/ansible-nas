@@ -1,0 +1,27 @@
+---
+# Enable or disable Resilio Sync
+resilio_sync_enabled: false
+resilio_sync_available_externally: false
+
+# Directories
+resilio_sync_data_directory: "{{ docker_home }}/resilio-sync"
+resilio_sync_config_directory: "{{ resilio_sync_data_directory }}/config"
+resilio_sync_download_directory: "{{ nfs_mount_point }}/sync"
+resilio_sync_local_sync_directory: "{{ resilio_sync_data_directory }}/sync"
+
+# Network
+resilio_sync_hostname: "resilio-sync"
+resilio_sync_port: "8888"
+resilio_sync_listen_port: "55555"
+
+# Docker
+resilio_sync_container_name: resilio-sync
+resilio_sync_image_name: "lscr.io/linuxserver/resilio-sync"
+resilio_sync_image_version: latest
+
+# User and group IDs
+resilio_sync_user_id: "1000"
+resilio_sync_group_id: "1000"
+
+# Memory limit
+resilio_sync_memory: "1g"

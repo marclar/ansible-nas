@@ -425,6 +425,10 @@
       tags:
         - syncthing
 
+    - role: resilio_sync
+      tags:
+        - resilio_sync
+
     - role: tautulli
       tags:
         - tautulli

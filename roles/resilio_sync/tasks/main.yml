@@ -1,0 +1,51 @@
+---
+- name: Start Resilio Sync
+  block:
+    - name: Create Resilio Sync Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_nas_user }}"
+        group: "{{ ansible_nas_user }}"
+        mode: 0755
+      with_items:
+        - "{{ resilio_sync_data_directory }}"
+        - "{{ resilio_sync_config_directory }}"
+      
+    - name: Ensure NFS sync directory exists
+      ansible.builtin.file:
+        path: "{{ resilio_sync_download_directory }}"
+        state: directory
+
+    - name: Create Resilio Sync Docker Container
+      community.docker.docker_container:
+        name: "{{ resilio_sync_container_name }}"
+        image: "{{ resilio_sync_image_name }}:{{ resilio_sync_image_version }}"
+        pull: true
+        volumes:
+          - "{{ resilio_sync_config_directory }}:/config:rw"
+          - "/mnt/truenas-media:/sync:rw"
+        env:
+          TZ: "{{ ansible_nas_timezone }}"
+          PUID: "{{ resilio_sync_user_id }}"
+          PGID: "{{ resilio_sync_group_id }}"
+        ports:
+          - "{{ resilio_sync_port }}:8888"
+          - "{{ resilio_sync_listen_port }}:55555"
+        restart_policy: unless-stopped
+        memory: "{{ resilio_sync_memory }}"
+        privileged: true
+        labels:
+          traefik.enable: "{{ resilio_sync_available_externally | string }}"
+          traefik.http.routers.resilio-sync.rule: "Host(`{{ resilio_sync_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.resilio-sync.entrypoints: "web"
+          traefik.http.services.resilio-sync.loadbalancer.server.port: "8888"
+  when: resilio_sync_enabled is true
+
+- name: Stop Resilio Sync
+  block:
+    - name: Stop Resilio Sync Container
+      community.docker.docker_container:
+        name: "{{ resilio_sync_container_name }}"
+        state: absent
+  when: resilio_sync_enabled is false

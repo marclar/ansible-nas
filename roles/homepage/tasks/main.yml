@@ -37,13 +37,9 @@
         restart: "{{ homepage_config is changed }}"
         memory: "{{ homepage_memory }}"
         labels:
-          traefik.enable: "{{ homepage_available_externally | string }}"
-          traefik.http.routers.homepage.rule: "Host(`{{ homepage_hostname }}.{{ ansible_nas_domain }}`)"
-          traefik.http.routers.homepage.entrypoints: "web,websecure"
-          traefik.http.routers.homepage.tls.certresolver: "letsencrypt"
-          traefik.http.routers.homepage.tls.domains[0].main: "{{ ansible_nas_domain }}"
-          traefik.http.routers.homepage.tls.domains[0].sans: "*.{{ ansible_nas_domain }}"
-          traefik.http.services.homepage.loadbalancer.server.port: "3000"
+          homepage.group: System
+          homepage.name: Homepage
+          homepage.icon: homepage
   when: homepage_enabled is true
 
 - name: Stop Homepage
