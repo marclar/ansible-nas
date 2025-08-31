@@ -8,7 +8,7 @@
       with_items:
         - "{{ nzbget_data_directory }}"
 
-    - name: NZBGet
+    - name: NZBGet without VPN
       community.docker.docker_container:
         name: "{{ nzbget_container_name }}"
         image: "{{ nzbget_image_name }}:{{ nzbget_image_version }}"
@@ -32,6 +32,25 @@
           traefik.http.routers.nzbget.rule: "Host(`{{ nzbget_hostname }}.{{ ansible_nas_domain }}`)"
           traefik.http.routers.nzbget.entrypoints: "web"
           traefik.http.services.nzbget.loadbalancer.server.port: "6789"
+      when: not nzbget_use_vpn
+
+    - name: NZBGet with VPN
+      community.docker.docker_container:
+        name: "{{ nzbget_container_name }}"
+        image: "{{ nzbget_image_name }}:{{ nzbget_image_version }}"
+        pull: true
+        network_mode: "container:gluetun"
+        volumes:
+          - "{{ nzbget_download_directory }}:/downloads:rw"
+          - "{{ nzbget_data_directory }}:/config:rw"
+          - "/mnt/truenas-media:/mnt/truenas-media:rw"
+        env:
+          TZ: "{{ ansible_nas_timezone }}"
+          PUID: "{{ nzbget_user_id }}"
+          PGID: "{{ nzbget_group_id }}"
+        restart_policy: unless-stopped
+        memory: "{{ nzbget_memory }}"
+      when: nzbget_use_vpn
   when: nzbget_enabled is true
 
 - name: Stop NZBget

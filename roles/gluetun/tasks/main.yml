@@ -13,16 +13,21 @@
         name: "{{ gluetun_container_name }}"
         image: "{{ gluetun_image | default('qmcgaw/gluetun:latest') }}"
         pull: true
+        networks:
+          - name: ansible-nas
         volumes:
           - "{{ docker_home }}/gluetun:/gluetun:rw"
         ports:
-          - "8888:8888/tcp"  # HTTP proxy
-          - "8388:8388/tcp"  # Shadowsocks
-          - "8388:8388/udp"  # Shadowsocks
+          # - "8888:8888/tcp"  # HTTP proxy (disabled - conflicts with Resilio Sync)
+          # - "8388:8388/tcp"  # Shadowsocks (disabled - not needed)
+          # - "8388:8388/udp"  # Shadowsocks (disabled - not needed)
           - "9091:9091"      # Transmission WebUI
           - "51413:51413"    # Transmission peer port
           - "51413:51413/udp"
-          - "18080:8080"     # SABnzbd WebUI (mapped from container's 8080 to host's 18080)
+          - "8080:8080"      # qBittorrent WebUI
+          - "6789:6789"      # NZBGet WebUI
+          - "6881:6881"      # qBittorrent peer port
+          - "6881:6881/udp"  # qBittorrent peer port
         capabilities:
           - NET_ADMIN
         devices:
@@ -81,6 +86,11 @@
           LOG_LEVEL: "{{ gluetun_log_level }}"
         restart_policy: unless-stopped
         memory: "512m"
+        labels:
+          traefik.enable: "true"
+          traefik.http.routers.qbittorrent.rule: "Host(`qbittorrent.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.qbittorrent.entrypoints: "web"
+          traefik.http.services.qbittorrent.loadbalancer.server.port: "8080"
         healthcheck:
           test: ["CMD", "/gluetun-entrypoint", "healthcheck"]
           interval: 10s

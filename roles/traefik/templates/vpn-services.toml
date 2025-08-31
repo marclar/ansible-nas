@@ -12,6 +12,16 @@
     entryPoints = ["web"]
     service = "sabnzbd-vpn"
 
+  [http.routers.qbittorrent-vpn]
+    rule = "Host(`qbittorrent.{{ ansible_nas_domain }}`)"
+    entryPoints = ["web"]
+    service = "qbittorrent-vpn"
+
+  [http.routers.nzbget-vpn]
+    rule = "Host(`nzbget.{{ ansible_nas_domain }}`)"
+    entryPoints = ["web"]
+    service = "nzbget-vpn"
+
 [http.services]
   [http.services.transmission-vpn]
     [http.services.transmission-vpn.loadBalancer]
@@ -22,3 +32,13 @@
     [http.services.sabnzbd-vpn.loadBalancer]
       [[http.services.sabnzbd-vpn.loadBalancer.servers]]
         url = "http://{{ ansible_default_ipv4.address }}:18080"
+
+  [http.services.qbittorrent-vpn]
+    [http.services.qbittorrent-vpn.loadBalancer]
+      [[http.services.qbittorrent-vpn.loadBalancer.servers]]
+        url = "http://{{ ansible_default_ipv4.address }}:8080"
+
+  [http.services.nzbget-vpn]
+    [http.services.nzbget-vpn.loadBalancer]
+      [[http.services.nzbget-vpn.loadBalancer.servers]]
+        url = "http://{{ ansible_default_ipv4.address }}:6789"
