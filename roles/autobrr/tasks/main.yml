@@ -31,7 +31,6 @@
         labels:
           traefik.enable: "{{ autobrr_available_externally | string }}"
           traefik.http.routers.autobrr.rule: "Host(`{{ autobrr_hostname }}.{{ ansible_nas_domain }}`)"
-          traefik.http.routers.autobrr.entrypoints: "web"
           traefik.http.services.autobrr.loadbalancer.server.port: "7474"
           homepage.group: "Download Tools"
           homepage.name: "autobrr"
