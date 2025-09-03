@@ -1,0 +1,551 @@
+---
+##                       ._____.   .__
+##  _____    ____   _____|__\_ |__ |  |   ____             ____ _____    ______
+##  \__  \  /    \ /  ___/  || __ \|  | _/ __ \   ______  /    \\__  \  /  ___/
+##   / __ \|   |  \\___ \|  || \_\ \  |_\  ___/  /_____/ |   |  \/ __ \_\___ \
+##  (____  /___|  /____  >__||___  /____/\___  >         |___|  (____  /____  >
+##       \/     \/     \/        \/          \/               \/     \/     \/
+##     a n s i b l e - n a s      https://github.com/davestephens/ansible-nas
+
+# Production Configuration for 1815.space
+
+###
+### General Configuration
+###
+ansible_nas_hostname: ansible-nas
+ansible_nas_timezone: America/New_York  # Change to your timezone
+ansible_nas_domain: "1815.space"
+ansible_nas_email: "admin@1815.space"  # Change to your email
+ansible_nas_user: mk  # Set to your actual username
+
+# Server IP Configuration
+ansible_nas_server_ip: "192.168.12.208"  # Main server IP address
+
+# Docker configuration (keep on fast local storage)
+docker_home: "/home/mk/docker"
+
+# NFS Mount Point - TrueNAS with 8.6TB storage
+nfs_mount_point: "/mnt/truenas-media"
+
+# Media storage paths - now using TrueNAS NFS mount
+downloads_root: "{{ nfs_mount_point }}/downloads"
+torrents_root: "{{ nfs_mount_point }}/downloads/complete"  # Using existing directory
+movies_root: "{{ nfs_mount_point }}/movies"
+tv_root: "{{ nfs_mount_point }}/tv"
+music_root: "{{ nfs_mount_point }}/music"
+photos_root: "{{ nfs_mount_point }}/photos"
+books_root: "{{ nfs_mount_point }}/books"
+audiobooks_root: "{{ nfs_mount_point }}/audiobooks"
+comics_root: "{{ nfs_mount_point }}/comics"
+podcasts_root: "{{ nfs_mount_point }}/podcasts"
+documents_root: "{{ nfs_mount_point }}/documents"
+
+###
+### Cloudflare Tunnel Configuration
+###
+# Enable Cloudflare Tunnel for public access without port forwarding
+cloudflare_tunnel_enabled: true
+cloudflare_tunnel_token: "{{ vault_cloudflare_tunnel_token }}"  # Stored in vault.yml
+
+###
+### Traefik Configuration
+###
+# Enable Traefik reverse proxy for SSL and routing
+traefik_enabled: true
+# DNS provider not needed as Cloudflare Tunnel handles SSL
+# traefik_dns_provider: cloudflare
+# traefik_environment_variables:
+#   CF_DNS_API_TOKEN: "{{ vault_traefik_cf_dns_api_token }}"  # For automatic SSL certificates
+
+###
+### Homepage Configuration
+###
+# Enable Homepage dashboard
+homepage_enabled: true
+homepage_available_externally: true
+homepage_title: "1815.space Home"
+homepage_locale: en-US
+homepage_hostname: "home"  # Use 'home' instead of 'homepage'
+
+# Override allowed hosts to include your domain
+homepage_allowed_hosts: "home.1815.space"
+
+# Homepage bookmarks configuration (empty to remove default bookmarks)
+homepage_bookmarks_yaml: []
+
+# Homepage services configuration
+homepage_services_yaml:
+  - Media:
+      - Plex:
+          icon: plex
+          href: https://plex.1815.space
+          description: Media Server
+          ping: "http://{{ ansible_nas_server_ip }}:32400/web"
+      - Radarr:
+          icon: radarr
+          href: https://radarr.1815.space
+          description: Movie Collection Manager
+          widget:
+            type: radarr
+            url: "http://{{ ansible_nas_server_ip }}:7878"
+            key: "{{ vault_radarr_api_key }}"
+      - Sonarr:
+          icon: sonarr
+          href: https://sonarr.1815.space
+          description: TV Series Collection Manager
+          widget:
+            type: sonarr
+            url: "http://{{ ansible_nas_server_ip }}:8989"
+            key: "{{ vault_sonarr_api_key }}"
+      - Boxarr:
+          icon: mdi-movie-open-plus
+          href: https://boxarr.1815.space
+          description: Box Office Movie Tracker for Radarr
+          ping: "http://{{ ansible_nas_server_ip }}:8890"
+      - Unmanic:
+          icon: unmanic
+          href: https://unmanic.1815.space
+          description: Automated Media Library Optimizer
+          ping: "http://{{ ansible_nas_server_ip }}:8889"
+      - Karakeep:
+          icon: mdi-bookmark
+          href: https://karakeep.1815.space
+          description: Bookmarks
+          ping: "http://{{ ansible_nas_server_ip }}:3000"
+
+  - Downloads:
+      - autobrr:
+          icon: autobrr
+          href: https://autobrr.1815.space
+          description: Modern RSS Downloader & Torrent Automation
+          ping: "http://{{ ansible_nas_server_ip }}:7474"
+          widget:
+            type: autobrr
+            url: "http://{{ ansible_nas_server_ip }}:7474"
+            key: "{{ vault_autobrr_api_key | default('') }}"
+      - qBittorrent:
+          icon: qbittorrent
+          href: https://qbittorrent.1815.space
+          description: Modern Torrent Client
+          ping: "http://{{ ansible_nas_server_ip }}:8080"
+      - NZBGet:
+          icon: nzbget
+          href: https://nzbget.1815.space
+          description: Alternative Usenet Downloader
+          widget:
+            type: nzbget
+            url: "http://{{ ansible_nas_server_ip }}:6789"
+            username: "nzbget"
+            password: "tegbzn6789"
+
+  - System:
+      - Portainer:
+          icon: portainer
+          href: https://portainer.1815.space
+          description: Docker Management Interface
+          ping: "http://{{ ansible_nas_server_ip }}:9000"
+      - Semaphore:
+          icon: ansible
+          href: https://semaphore.1815.space
+          description: Ansible Web UI & Automation
+          ping: "http://{{ ansible_nas_server_ip }}:3001"
+      - Traefik:
+          icon: traefik
+          href: "http://{{ ansible_nas_server_ip }}:8083"
+          description: Reverse Proxy Dashboard
+      - Cloudflare DDNS:
+          icon: cloudflare
+          href: https://dash.cloudflare.com
+          description: DNS Management
+      - Resilio Sync:
+          icon: si-resilio
+          href: https://resilio-sync.1815.space
+          description: P2P File Synchronization
+          ping: "http://{{ ansible_nas_server_ip }}:8888"
+      - n8n:
+          icon: n8n
+          href: https://n8n.1815.space
+          description: Workflow Automation Platform
+          ping: "http://{{ ansible_nas_server_ip }}:5678"
+
+  - Communication:
+      - Listmonk:
+          icon: mdi-email-newsletter
+          href: https://listmonk.1815.space
+          description: Newsletter & Mailing List Manager
+          ping: "http://{{ ansible_nas_server_ip }}:9001"
+
+  - Documentation:
+      - Memos:
+          icon: mdi-note-multiple
+          href: https://docs.1815.space
+          description: Modern Note-Taking Platform
+          ping: "http://{{ ansible_nas_server_ip }}:5230"
+      - ArchiveBox:
+          icon: mdi-archive
+          href: https://archivebox.1815.space
+          description: Web Archive & Digital Preservation
+          ping: "http://{{ ansible_nas_server_ip }}:8000"
+
+  - Productivity:
+      - Nullboard:
+          icon: mdi-view-dashboard
+          href: https://nullboard.1815.space
+          description: Minimalist Kanban Board
+          ping: "http://{{ ansible_nas_server_ip }}:8100"
+
+###
+### Media Applications (uncomment to enable)
+###
+plex_enabled: true
+plex_available_externally: true
+plex_user_id: "1000"
+plex_group_id: "1000"
+plex_server_name: "1815"
+# To claim your Plex server, get a token from https://www.plex.tv/claim/
+# Token expires after 4 minutes, so generate it right before deploying
+plex_claim_token: ""  # Server claimed as "1815"
+
+radarr_enabled: true
+radarr_available_externally: true
+radarr_user_id: "1000"
+radarr_group_id: "1000"
+
+# Boxarr - Automatically track and add box office movies to Radarr
+boxarr_enabled: true
+boxarr_available_externally: true
+boxarr_hostname: "boxarr"
+boxarr_port: "8890"  # Changed from default 8888 (conflicts with Gluetun)
+
+sonarr_enabled: true
+sonarr_available_externally: true
+sonarr_user_id: "1000"
+sonarr_group_id: "1000"
+
+bazarr_enabled: false
+bazarr_available_externally: false
+
+prowlarr_enabled: false
+prowlarr_available_externally: false
+
+overseerr_enabled: true
+overseerr_available_externally: true
+
+###
+### Security Configuration
+###
+# Global Basic Authentication for all external services
+# Default credentials: admin / secure123
+# Change these in /home/mk/docker/traefik/traefik-auth.toml
+global_auth_middleware_enabled: true
+
+###
+### Management Applications (uncomment to enable)
+###
+portainer_enabled: true
+portainer_available_externally: true
+
+# netdata_enabled: true
+# netdata_available_externally: true
+
+# Semaphore - Ansible Web UI
+semaphore_enabled: true
+semaphore_available_externally: true
+
+###
+### Download Automation
+###
+# autobrr - Modern RSS downloader and torrent automation
+autobrr_enabled: true
+autobrr_available_externally: true
+autobrr_user_id: "1000"
+autobrr_group_id: "1000"
+
+###
+### Download Clients (uncomment to enable)
+###
+transmission_enabled: false  # Disabled - removed in favor of rTorrent
+transmission_available_externally: false
+transmission_downloads_directory: "{{ nfs_mount_point }}/downloads/complete"
+
+sabnzbd_enabled: false  # Disabled - NZBGet is the primary Usenet client
+sabnzbd_available_externally: false
+sabnzbd_incomplete_directory: "{{ nfs_mount_point }}/downloads/incomplete"
+sabnzbd_downloads_directory: "{{ nfs_mount_point }}/downloads/complete"
+
+# uTorrent - Alternative torrent client (AMD64 only - incompatible with ARM64)
+utorrent_enabled: false  # Disabled due to ARM64 incompatibility
+utorrent_available_externally: false
+utorrent_user_id: "1000"
+utorrent_group_id: "1000"
+
+# rTorrent/ruTorrent - Powerful torrent client with web UI (ARM64 compatible)
+rtorrent_enabled: false  # Disabled due to issues
+rtorrent_available_externally: false
+rtorrent_hostname: "rtorrent"
+
+# qBittorrent - Modern torrent client with web UI
+qbittorrent_enabled: true
+qbittorrent_available_externally: true
+qbittorrent_hostname: "qbittorrent"
+qbittorrent_port: "8080"
+qbittorrent_use_vpn: true  # Route through Gluetun VPN
+
+###
+### File Management (uncomment to enable)
+###
+# nextcloud_enabled: true
+# nextcloud_available_externally: true
+
+###
+### Additional Media Services
+###
+emby_enabled: false
+emby_available_externally: false
+emby_user_id: "1000"
+emby_group_id: "1000"
+
+jellyfin_enabled: false
+jellyfin_available_externally: true
+jellyfin_port_http: "8097"
+
+stash_enabled: true
+stash_available_externally: true
+
+nzbget_enabled: true
+nzbget_available_externally: true
+nzbget_user_id: "1000"
+nzbget_group_id: "1000"
+
+###
+### Automation and Organization
+###
+n8n_enabled: true
+n8n_available_externally: true
+
+linkace_enabled: false
+linkace_available_externally: false
+linkace_app_key: "base64:/hgyPG7wkojLIu6EkuE2C6F6sig1RA5W+MCFlArrl4g="
+
+youtubedlmaterial_enabled: false
+youtubedlmaterial_available_externally: false
+
+organizr_enabled: false
+organizr_available_externally: false
+
+###
+### Music and Media Discovery
+###
+spotizerr_enabled: false  # Disabled - not functioning properly
+spotizerr_available_externally: false
+
+unmanic_enabled: true
+unmanic_available_externally: true
+
+# Karakeep - Bookmark manager with AI-powered automatic tagging
+karakeep_enabled: true
+karakeep_available_externally: true
+karakeep_hostname: "karakeep"
+karakeep_port: "3000"
+karakeep_nextauth_secret: "mrEm2m7+9szD6KBUpXDW8yi24McANdeDmmKTKTI1qP8="
+karakeep_meili_master_key: "jMzLWnuoHeqh+a/FaO6V24jSryYMkYf44MJbIHBCmh4="
+# Ollama integration for automatic tagging
+karakeep_ollama_base_url: "http://ollama:11434"
+karakeep_inference_text_model: "llama3.2:3b"
+karakeep_inference_image_model: "llava:7b"
+karakeep_inference_context_length: "4096"
+
+# Ollama - Local AI model server for Karakeep automatic tagging
+ollama_enabled: true
+ollama_available_externally: false  # Keep internal for security
+ollama_hostname: "ollama"
+ollama_port: "11434"
+
+###
+### Productivity Services
+###
+nullboard_enabled: true
+nullboard_available_externally: true
+nullboard_hostname: "nullboard"
+nullboard_port: "8100"
+
+###
+### Archival & Web Services
+###
+# ArchiveBox - Self-hosted web archiving
+archivebox_enabled: true
+archivebox_available_externally: true
+archivebox_hostname: "archivebox"
+archivebox_admin_username: "admin"
+archivebox_admin_password: "{{ vault_archivebox_admin_password | default('archive123') }}"
+archivebox_secret_key: "{{ vault_archivebox_secret_key | default('archivebox-secret-key-change-me') }}"
+
+###
+### Backup Services
+###
+# Restic Backup - Automated incremental backups to NFS
+restic_backup_enabled: true
+restic_backup_password: "{{ vault_restic_backup_password | default('restic-backup-password-change-me') }}"
+restic_backup_schedule: "0 5 * * *"  # 5 AM daily
+restic_backup_notification_url: ""  # Optional webhook for notifications
+
+###
+### Documentation Services
+###
+# TiddlyWiki - Disabled but kept installed, now at tiddlywiki.1815.space
+tiddlywiki_enabled: false  # Disabled in favor of Memos
+tiddlywiki_available_externally: true
+tiddlywiki_hostname: "tiddlywiki"  # Changed from docs to tiddlywiki
+tiddlywiki_port: "8092"
+tiddlywiki_username: "admin"
+tiddlywiki_password: "tiddly-docs-1815"
+
+# Memos - Modern note-taking app, now at docs.1815.space
+memos_enabled: true
+memos_available_externally: true
+memos_hostname: "docs"  # Using the docs subdomain previously used by TiddlyWiki
+
+###
+### Communication & Email Services
+###
+listmonk_enabled: true
+listmonk_available_externally: true
+listmonk_hostname: "listmonk"
+listmonk_port: "9001"
+listmonk_admin_user: "admin"
+listmonk_admin_password: "listmonk-admin-1815"  # Change this!
+
+###
+### Dashboard Services
+###
+dashy_enabled: false
+dashy_available_externally: false
+dashy_hostname: "dashy"  # Will be accessible at dashy.1815.space (Homepage is already using home.1815.space)
+dashy_port: "8082"
+dashy_memory: "2g"  # Increased from 1g due to build memory requirements
+
+
+
+# Gluetun VPN Configuration
+# This file configures VPN settings for download clients (Transmission, SABnzbd)
+
+# Enable Gluetun VPN container
+gluetun_enabled: true  # Set to true to enable VPN
+
+# VPN Provider Configuration
+# Supported providers: nordvpn, expressvpn, surfshark, mullvad, protonvpn, privado, cyberghost, pia, windscribe, etc.
+# Full list: https://github.com/qdm12/gluetun-wiki/tree/main/setup/providers
+gluetun_vpn_service_provider: "privado"  # REQUIRED: e.g., "nordvpn", "expressvpn", "mullvad"
+gluetun_vpn_type: "openvpn"  # or "wireguard" (if your provider supports it)
+
+# OpenVPN Credentials (for providers using username/password)
+gluetun_openvpn_user: "{{ vault_gluetun_openvpn_user }}"  # Stored in vault.yml
+gluetun_openvpn_password: "{{ vault_gluetun_openvpn_password }}"  # Stored in vault.yml
+
+# WireGuard Configuration (for providers using WireGuard)
+gluetun_wireguard_private_key: "{{ vault_gluetun_wireguard_private_key | default('') }}"  # Stored in vault.yml
+gluetun_wireguard_addresses: "{{ vault_gluetun_wireguard_addresses | default('') }}"  # Stored in vault.yml
+
+# Server Selection (optional - leave empty for automatic selection)
+gluetun_server_countries: ""  # e.g., "United States", "Netherlands", "Switzerland"
+gluetun_server_cities: ""  # e.g., "New York", "Amsterdam", "Zurich"
+gluetun_server_hostnames: ""  # Specific server hostname if you want a particular server
+
+# Port Forwarding (if your VPN provider supports it)
+gluetun_firewall_vpn_input_ports: "51413"  # Transmission peer port for better torrent performance
+
+# Local Network Access - IMPORTANT: Update this to match your local network
+gluetun_firewall_outbound_subnets: "192.168.12.0/24"  # Your local network subnet
+
+# Enable VPN routing for download clients
+transmission_use_vpn: false  # Disabled - service removed
+sabnzbd_use_vpn: false  # Disabled - service removed
+
+# DNS Settings (optional - uses Cloudflare by default)
+gluetun_dns_address: "1.1.1.1"
+
+# Blocking features (optional)
+gluetun_block_malicious: "on"
+gluetun_block_ads: "off"  # Set to "on" if you want ad blocking
+gluetun_block_surveillance: "off"  # Set to "on" if you want surveillance blocking
+
+###############################################################################
+# SETUP INSTRUCTIONS:
+###############################################################################
+#
+# 1. Choose your VPN provider and set gluetun_vpn_service_provider
+#
+# 2. Configure authentication based on your provider:
+#    - For OpenVPN: Set gluetun_openvpn_user and gluetun_openvpn_password
+#    - For WireGuard: Set gluetun_wireguard_private_key and gluetun_wireguard_addresses
+#
+# 3. (Optional) Select server location with gluetun_server_countries/cities
+#
+# 4. Update gluetun_firewall_outbound_subnets to match your local network
+#
+# 5. Enable the services:
+#    - Set gluetun_enabled: true
+#    - Set transmission_use_vpn: true and/or sabnzbd_use_vpn: true
+#
+# 6. Deploy with: ./deploy.sh
+#
+# 7. Verify VPN is working:
+#    ssh mk@192.168.12.100 "docker exec gluetun curl -s https://ipinfo.io"
+#    This should show your VPN's IP address, not your real IP
+#
+###############################################################################
+
+# Provider-Specific Examples:
+# 
+# NordVPN:
+# gluetun_vpn_service_provider: "nordvpn"
+# gluetun_openvpn_user: "your_nordvpn_username"
+# gluetun_openvpn_password: "your_nordvpn_password"
+#
+# ExpressVPN:
+# gluetun_vpn_service_provider: "expressvpn"
+# gluetun_openvpn_user: "your_expressvpn_username"
+# gluetun_openvpn_password: "your_expressvpn_password"
+#
+# Mullvad:
+# gluetun_vpn_service_provider: "mullvad"
+# gluetun_openvpn_user: "your_mullvad_account_number"
+# gluetun_openvpn_password: "m"  # Mullvad always uses "m" as password
+#
+# ProtonVPN:
+# gluetun_vpn_service_provider: "protonvpn"
+# gluetun_openvpn_user: "your_protonvpn_openvpn_username"  # Note: OpenVPN credentials, not account login
+# gluetun_openvpn_password: "your_protonvpn_openvpn_password"
+# VPN Configuration for Download Clients
+nzbget_use_vpn: true
+rtorrent_use_vpn: true
+
+
+###
+### Terminal Services
+###
+# Wetty - Web-based SSH Terminal
+wetty_enabled: false
+wetty_available_externally: false
+wetty_hostname: "wetty"
+wetty_port: "3001"
+
+###
+### Resilio Sync Configuration
+###
+resilio_sync_enabled: true
+resilio_sync_available_externally: true
+resilio_sync_hostname: "resilio-sync"
+resilio_sync_port: "8888"
+resilio_sync_listen_port: "55555"
+
+###
+### Backblaze B2 Cloud Backup Configuration
+###
+backblaze_b2_enabled: true
+backblaze_b2_bucket_name: "1815-ansible-nas"  # Your existing bucket
+backblaze_b2_sync_schedule: "0 3 * * *"  # Daily at 3 AM (before Restic at 5 AM)
+backblaze_b2_bandwidth_limit: "0"  # Unlimited - adjust if needed
+backblaze_b2_log_level: "INFO"
+backblaze_b2_notification_url: ""  # Add webhook URL for notifications if desired
+backblaze_b2_retention_days: "90"  # Keep backups for 90 days

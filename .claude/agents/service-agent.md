@@ -49,8 +49,26 @@ When invoked to deploy a new service, you must follow these steps:
      ```
 
 6. **Update Homepage Dashboard**
-   - Add service entry to Homepage configuration if needed
-   - Include service URL, description, and health check
+   - **ALWAYS add the service to Homepage** in `/Users/mk/ansible-nas/inventories/production/group_vars/nas/main.yml`
+   - Add under appropriate category in `homepage_services_yaml` section
+   - **Required fields:**
+     ```yaml
+     - ServiceName:
+         icon: service-icon
+         href: https://service.1815.space
+         description: Brief service description
+         ping: "http://{{ ansible_nas_server_ip }}:port"
+     ```
+   - **Add widget if service has API support:**
+     ```yaml
+     widget:
+       type: service-type
+       url: "http://{{ ansible_nas_server_ip }}:port"
+       key: "{{ vault_service_api_key | default('') }}"
+     ```
+   - Check if service is supported at https://gethomepage.dev/widgets/services/
+   - If API key is needed, add placeholder in vault variables (even if empty initially)
+   - Common widget types: radarr, sonarr, plex, qbittorrent, sabnzbd, autobrr, etc.
 
 7. **Integrate Service into Playbook**
    - Add role to `/Users/mk/ansible-nas/nas.yml` with appropriate tag
