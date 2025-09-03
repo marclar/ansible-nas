@@ -1,0 +1,20 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: instance
+    image: quay.io/ansible/molecule-ubuntu:20.04
+    pre_build_image: true
+provisioner:
+  name: ansible
+  inventory:
+    host_vars:
+      instance:
+        ansible_nas_timezone: America/New_York
+        ansible_nas_domain: test.local
+        docker_home: /tmp
+        autobrr_enabled: true
+verifier:
+  name: ansible

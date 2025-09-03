@@ -57,6 +57,14 @@
       tags:
         - airsonic
 
+    - role: archivebox
+      tags:
+        - archivebox
+
+    - role: autobrr
+      tags:
+        - autobrr
+
     - role: apcupsd
       tags:
         - apcupsd
@@ -176,6 +184,20 @@
     - role: karakeep
       tags:
         - karakeep
+
+    - role: ollama
+      tags:
+        - ollama
+
+    - role: restic-backup
+      tags:
+        - restic-backup
+        - backup
+
+    - role: backblaze-b2
+      tags:
+        - backblaze-b2
+        - backup
 
     - role: gitlab
       tags:
@@ -397,6 +419,10 @@
       tags:
         - sabnzbd
 
+    - role: semaphore
+      tags:
+        - semaphore
+
     - role: sickchill
       tags:
         - sickchill
@@ -501,6 +527,10 @@
     - role: wallabag
       tags:
         - wallabag
+
+    - role: wetty
+      tags:
+        - wetty
 
     - role: watchtower
       tags:

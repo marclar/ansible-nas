@@ -1,0 +1,22 @@
+---
+autobrr_enabled: false
+autobrr_available_externally: false
+
+# directories
+autobrr_data_directory: "{{ docker_home }}/autobrr"
+
+# uid / gid
+autobrr_user_id: "1000"
+autobrr_group_id: "1000"
+
+# network
+autobrr_port: "7474"
+autobrr_hostname: "autobrr"
+
+# docker
+autobrr_container_name: "autobrr"
+autobrr_image_name: "ghcr.io/autobrr/autobrr"
+autobrr_image_version: "latest"
+
+# specs
+autobrr_memory: 1g
