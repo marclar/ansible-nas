@@ -1,0 +1,48 @@
+---
+backblaze_b2_enabled: false
+backblaze_b2_available_externally: false
+
+# Container settings
+backblaze_b2_container_name: "backblaze-b2"
+backblaze_b2_image: "rclone/rclone:latest"
+backblaze_b2_hostname: "backblaze-b2"
+backblaze_b2_memory: 1g
+
+# Backup source directory (Restic backups)
+backblaze_b2_source_path: "/mnt/truenas-media/backups"
+
+# Backblaze B2 configuration (stored in vault)
+backblaze_b2_application_key_id: "{{ vault_backblaze_b2_application_key_id }}"
+backblaze_b2_application_key: "{{ vault_backblaze_b2_application_key }}"
+backblaze_b2_bucket_name: "ansible-nas-backups"
+
+# Sync schedule (cron format) - 3 AM daily (before Restic backup at 5 AM)
+backblaze_b2_sync_schedule: "0 3 * * *"
+
+# Bandwidth limits (optional - set to 0 for unlimited)
+# Values in KB/s (e.g., 10240 = 10 MB/s)
+backblaze_b2_bandwidth_limit: "0"  # Unlimited by default
+
+# Sync options
+backblaze_b2_sync_options: "--progress --transfers 4 --checkers 8 --delete-after"
+
+# Retention policy for old backups (days)
+backblaze_b2_retention_days: "90"
+
+# Logging configuration
+backblaze_b2_log_level: "INFO"  # DEBUG, INFO, NOTICE, ERROR
+backblaze_b2_log_file: "/logs/rclone.log"
+
+# Notification settings (optional webhook URL)
+backblaze_b2_notification_url: ""
+
+# User and group IDs
+backblaze_b2_user_id: "{{ ansible_user_uid | default(1000) }}"
+backblaze_b2_group_id: "{{ ansible_user_gid | default(1000) }}"
+
+# Timezone
+backblaze_b2_timezone: "{{ ansible_nas_timezone }}"
+
+# Health check settings
+backblaze_b2_healthcheck_enabled: true
+backblaze_b2_healthcheck_interval: "24h"

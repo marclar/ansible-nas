@@ -1,0 +1,156 @@
+---
+- name: Start Backblaze B2 Backup
+  block:
+    - name: Create Backblaze B2 directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      with_items:
+        - "{{ docker_home }}/backblaze-b2"
+        - "{{ docker_home }}/backblaze-b2/config"
+        - "{{ docker_home }}/backblaze-b2/logs"
+
+    - name: Create rclone configuration file
+      ansible.builtin.template:
+        src: rclone.conf.j2
+        dest: "{{ docker_home }}/backblaze-b2/config/rclone.conf"
+        mode: "0600"
+        backup: yes
+      no_log: true  # Don't log to avoid exposing credentials
+
+    - name: Create sync script
+      ansible.builtin.template:
+        src: sync-to-b2.sh.j2
+        dest: "{{ docker_home }}/backblaze-b2/sync-to-b2.sh"
+        mode: "0755"
+
+    - name: Create notification script for health checks
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # Simple health check script
+          LOG_FILE="/logs/rclone.log"
+          
+          # Check if log file exists and has recent entries
+          if [[ -f "${LOG_FILE}" ]]; then
+              # Check for entries in the last 25 hours (allowing for schedule variance)
+              recent_entries=$(find "${LOG_FILE}" -mtime -1 -type f 2>/dev/null | wc -l)
+              if [[ ${recent_entries} -gt 0 ]]; then
+                  echo "Health check: OK - Recent backup activity found"
+                  exit 0
+              fi
+          fi
+          
+          echo "Health check: WARNING - No recent backup activity"
+          exit 1
+        dest: "{{ docker_home }}/backblaze-b2/health-check.sh"
+        mode: "0755"
+
+    - name: Create Backblaze B2 Docker Container
+      community.docker.docker_container:
+        name: "{{ backblaze_b2_container_name }}"
+        image: "{{ backblaze_b2_image }}"
+        pull: true
+        state: started
+        restart_policy: unless-stopped
+        memory: "{{ backblaze_b2_memory }}"
+        hostname: "{{ backblaze_b2_hostname }}"
+        volumes:
+          # Mount backup source directory (read-only for safety)
+          - "{{ backblaze_b2_source_path }}:/source:ro"
+          # Configuration and logs
+          - "{{ docker_home }}/backblaze-b2/config:/config:rw"
+          - "{{ docker_home }}/backblaze-b2/logs:/logs:rw"
+          # Scripts
+          - "{{ docker_home }}/backblaze-b2/sync-to-b2.sh:/scripts/sync-to-b2.sh:ro"
+          - "{{ docker_home }}/backblaze-b2/health-check.sh:/scripts/health-check.sh:ro"
+        env:
+          TZ: "{{ backblaze_b2_timezone }}"
+          PUID: "{{ backblaze_b2_user_id }}"
+          PGID: "{{ backblaze_b2_group_id }}"
+          # rclone specific environment variables
+          RCLONE_CONFIG: "/config/rclone.conf"
+          RCLONE_LOG_LEVEL: "{{ backblaze_b2_log_level }}"
+        entrypoint: ["/bin/sh"]
+        command: >
+          -c "
+          echo 'Backblaze B2 backup container started';
+          echo 'Creating cron job for scheduled sync...';
+          echo '{{ backblaze_b2_sync_schedule }} /scripts/sync-to-b2.sh' > /tmp/crontab;
+          crontab /tmp/crontab;
+          echo 'Starting cron daemon...';
+          crond -f -l 2;
+          "
+        labels:
+          traefik.enable: "false"  # No web interface needed for rclone
+
+    - name: Wait for container to be ready
+      ansible.builtin.pause:
+        seconds: 5
+
+    - name: Test Backblaze B2 connection
+      community.docker.docker_container_exec:
+        container: "{{ backblaze_b2_container_name }}"
+        command: >
+          rclone --config /config/rclone.conf lsd backblaze-b2:
+      register: b2_test
+      failed_when: false
+      changed_when: false
+
+    - name: Display connection test result
+      ansible.builtin.debug:
+        msg: >
+          {% if b2_test.rc is defined and b2_test.rc == 0 %}
+          Backblaze B2 connection successful. Available buckets: {{ b2_test.stdout_lines | join(', ') }}
+          {% elif b2_test.rc is defined %}
+          WARNING: Backblaze B2 connection test failed. Please check credentials and bucket configuration.
+          Error: {{ b2_test.stderr | default('Unknown error') }}
+          {% else %}
+          Skipping connection test (check mode or task was skipped)
+          {% endif %}
+      when: not ansible_check_mode
+
+    - name: Create bucket if it doesn't exist
+      community.docker.docker_container_exec:
+        container: "{{ backblaze_b2_container_name }}"
+        command: >
+          rclone --config /config/rclone.conf mkdir backblaze-b2:{{ backblaze_b2_bucket_name }}
+      register: bucket_create
+      failed_when: false
+      changed_when: "bucket_create.stderr is defined and 'directory not found' not in bucket_create.stderr"
+      when: not ansible_check_mode
+
+    - name: Display initial sync information
+      ansible.builtin.debug:
+        msg: |
+          Backblaze B2 backup is now configured and running.
+          
+          Configuration:
+          - Source: {{ backblaze_b2_source_path }}
+          - Bucket: {{ backblaze_b2_bucket_name }}
+          - Schedule: {{ backblaze_b2_sync_schedule }}
+          - Log Level: {{ backblaze_b2_log_level }}
+          
+          To trigger an immediate sync, run:
+          docker exec {{ backblaze_b2_container_name }} /scripts/sync-to-b2.sh
+          
+          To check logs:
+          docker exec {{ backblaze_b2_container_name }} tail -f /logs/rclone.log
+
+  when: backblaze_b2_enabled is true
+
+- name: Stop Backblaze B2 Backup
+  block:
+    - name: Stop Backblaze B2 Container
+      community.docker.docker_container:
+        name: "{{ backblaze_b2_container_name }}"
+        state: absent
+
+    - name: Remove configuration files (optional)
+      ansible.builtin.file:
+        path: "{{ docker_home }}/backblaze-b2"
+        state: absent
+      when: backblaze_b2_remove_config_on_disable | default(false)
+
+  when: backblaze_b2_enabled is false

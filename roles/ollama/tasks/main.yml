@@ -1,0 +1,61 @@
+---
+- name: Start Ollama
+  block:
+    - name: Create Ollama Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - "{{ ollama_data_directory }}"
+        - "{{ ollama_data_directory }}/models"
+
+    - name: Create Ollama container
+      community.docker.docker_container:
+        name: "{{ ollama_container_name }}"
+        image: "{{ ollama_image_name }}:{{ ollama_image_version }}"
+        pull: true
+        volumes:
+          - "{{ ollama_data_directory }}:/root/.ollama:rw"
+        ports:
+          - "{{ ollama_port }}:11434"
+        env:
+          OLLAMA_HOST: "0.0.0.0"
+          OLLAMA_MODELS: "/root/.ollama/models"
+        restart_policy: unless-stopped
+        memory: "{{ ollama_memory }}"
+        devices: "{{ ['/dev/dri:/dev/dri'] if not ollama_gpu_enabled else omit }}"
+        device_requests: "{{ [{'driver': 'nvidia', 'count': -1, 'capabilities': [['gpu']]}] if ollama_gpu_enabled else omit }}"
+        labels:
+          traefik.enable: "{{ ollama_available_externally | string }}"
+          traefik.http.routers.ollama.rule: "Host(`{{ ollama_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.ollama.entrypoints: "web"
+          traefik.http.services.ollama.loadbalancer.server.port: "11434"
+
+    - name: Wait for Ollama to be ready
+      ansible.builtin.wait_for:
+        port: "{{ ollama_port }}"
+        host: "{{ ansible_nas_server_ip }}"
+        delay: 5
+        timeout: 60
+
+    - name: Download default models
+      community.docker.docker_container_exec:
+        container: "{{ ollama_container_name }}"
+        command: "ollama pull {{ item }}"
+      with_items: "{{ ollama_default_models }}"
+      when: ollama_default_models is defined and ollama_default_models | length > 0
+      register: model_download
+      retries: 3
+      delay: 10
+      until: model_download is not failed
+
+  when: ollama_enabled is true
+
+- name: Stop Ollama
+  block:
+    - name: Stop Ollama container
+      community.docker.docker_container:
+        name: "{{ ollama_container_name }}"
+        state: absent
+
+  when: ollama_enabled is false

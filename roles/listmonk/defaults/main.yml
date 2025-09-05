@@ -6,6 +6,13 @@ listmonk_available_externally: false
 listmonk_data_directory: "{{ docker_home }}/listmonk"
 listmonk_db_directory: "{{ docker_home }}/listmonk-db"
 
+# SAFETY SETTINGS - Prevent database overwrites
+listmonk_backup_enabled: true
+listmonk_backup_retention_count: 10
+listmonk_backup_retention_compressed: 30
+listmonk_db_preserve_on_stop: true  # Keep database volume when stopping
+listmonk_db_recreate_container: false  # Never recreate DB container
+
 # network
 listmonk_port: "9000"
 listmonk_hostname: "listmonk"

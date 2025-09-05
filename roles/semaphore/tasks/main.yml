@@ -1,0 +1,111 @@
+---
+- name: Start Semaphore
+  block:
+    - name: Create Semaphore Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "1001"  # Semaphore container user
+        group: "1001"
+        mode: '0755'
+      with_items:
+        - "{{ semaphore_data_directory }}"
+        - "{{ semaphore_config_directory }}"
+        - "{{ semaphore_db_directory }}"
+      become: true
+
+    - name: Create Semaphore Docker Network
+      community.docker.docker_network:
+        name: "{{ semaphore_docker_network }}"
+        driver: bridge
+        state: present
+
+    - name: Create Semaphore PostgreSQL Container
+      community.docker.docker_container:
+        name: "{{ semaphore_postgres_container_name }}"
+        image: "{{ semaphore_postgres_image_name }}:{{ semaphore_postgres_image_tag }}"
+        pull: true
+        restart_policy: unless-stopped
+        memory: "{{ semaphore_postgres_memory }}"
+        networks:
+          - name: "{{ semaphore_docker_network }}"
+        env:
+          POSTGRES_USER: "{{ semaphore_db_user }}"
+          POSTGRES_PASSWORD: "{{ semaphore_db_password }}"
+          POSTGRES_DB: "{{ semaphore_db_name }}"
+          TZ: "{{ ansible_nas_timezone }}"
+        volumes:
+          - "{{ semaphore_db_directory }}:/var/lib/postgresql/data"
+        state: started
+
+    - name: Wait for PostgreSQL to be ready
+      ansible.builtin.wait_for:
+        timeout: 30
+      delegate_to: localhost
+
+    - name: Create Semaphore Docker Container
+      community.docker.docker_container:
+        name: "{{ semaphore_container_name }}"
+        image: "{{ semaphore_image_name }}:{{ semaphore_image_tag }}"
+        pull: true
+        restart_policy: unless-stopped
+        memory: "{{ semaphore_memory }}"
+        networks:
+          - name: "{{ semaphore_docker_network }}"
+        env:
+          TZ: "{{ ansible_nas_timezone }}"
+          SEMAPHORE_DB_USER: "{{ semaphore_db_user }}"
+          SEMAPHORE_DB_PASS: "{{ semaphore_db_password }}"
+          SEMAPHORE_DB_HOST: "{{ semaphore_db_host }}"
+          SEMAPHORE_DB_PORT: "{{ semaphore_db_port }}"
+          SEMAPHORE_DB_DIALECT: "postgres"
+          SEMAPHORE_DB: "{{ semaphore_db_name }}"
+          SEMAPHORE_PLAYBOOK_PATH: "{{ semaphore_ansible_project_path }}"
+          SEMAPHORE_ADMIN_PASSWORD: "{{ semaphore_admin_password }}"
+          SEMAPHORE_ADMIN_NAME: "{{ semaphore_admin_name }}"
+          SEMAPHORE_ADMIN_EMAIL: "{{ semaphore_admin_email }}"
+          SEMAPHORE_ADMIN: "{{ semaphore_admin_username }}"
+          SEMAPHORE_ACCESS_KEY_ENCRYPTION: "{{ semaphore_access_key_encryption }}"
+          SEMAPHORE_COOKIE_HASH: "{{ semaphore_cookie_hash }}"
+          SEMAPHORE_COOKIE_ENCRYPTION: "{{ semaphore_cookie_encryption }}"
+          SEMAPHORE_WEB_HOST: "{{ semaphore_web_host }}"
+          SEMAPHORE_TMP_PATH: "{{ semaphore_tmp_path }}"
+          ANSIBLE_HOST_KEY_CHECKING: "{{ semaphore_ansible_host_key_checking }}"
+        volumes:
+          - "{{ semaphore_config_directory }}:/etc/semaphore"
+          - "{{ semaphore_local_ansible_path }}:{{ semaphore_ansible_project_path }}:ro"
+          - "/tmp:/tmp"
+          - "/var/run/docker.sock:/var/run/docker.sock"
+        ports:
+          - "{{ semaphore_port }}:3000"
+        labels:
+          traefik.enable: "{{ semaphore_available_externally | string }}"
+          traefik.http.routers.semaphore.rule: "Host(`{{ semaphore_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.services.semaphore.loadbalancer.server.port: "3000"
+          homepage.group: System
+          homepage.name: Semaphore
+          homepage.icon: ansible
+          homepage.href: "https://{{ semaphore_hostname }}.{{ ansible_nas_domain }}"
+          homepage.description: Ansible Web UI
+        state: started
+
+  when: semaphore_enabled is true
+
+- name: Stop Semaphore
+  block:
+    - name: Stop Semaphore Container
+      community.docker.docker_container:
+        name: "{{ semaphore_container_name }}"
+        state: absent
+
+    - name: Stop PostgreSQL Container
+      community.docker.docker_container:
+        name: "{{ semaphore_postgres_container_name }}"
+        state: absent
+
+    - name: Remove Semaphore Docker Network
+      community.docker.docker_network:
+        name: "{{ semaphore_docker_network }}"
+        state: absent
+
+  when: semaphore_enabled is false

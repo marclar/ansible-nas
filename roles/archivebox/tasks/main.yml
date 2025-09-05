@@ -1,0 +1,78 @@
+---
+- name: Start ArchiveBox
+  block:
+    - name: Create ArchiveBox Local Data Directory
+      ansible.builtin.file:
+        path: "{{ archivebox_data_directory }}"
+        state: directory
+        owner: "{{ archivebox_user_id }}"
+        group: "{{ archivebox_group_id }}"
+        mode: "0755"
+
+    - name: Create ArchiveBox NFS Backup Directory
+      ansible.builtin.file:
+        path: "{{ nfs_mount_point }}/archivebox"
+        state: directory
+        mode: "0755"
+
+    - name: Create ArchiveBox Docker Container
+      community.docker.docker_container:
+        name: "{{ archivebox_container_name }}"
+        image: "{{ archivebox_image_name }}:{{ archivebox_image_tag }}"
+        pull: true
+        state: started
+        restart_policy: unless-stopped
+        memory: "{{ archivebox_memory if archivebox_memory else omit }}"
+        volumes:
+          - "{{ archivebox_data_directory }}:/data:rw"
+          - "{{ nfs_mount_point }}/archivebox:/backup:rw"
+        ports:
+          - "{{ archivebox_port }}:8000"
+        env:
+          TZ: "{{ ansible_nas_timezone }}"
+          PUID: "{{ archivebox_user_id }}"
+          PGID: "{{ archivebox_group_id }}"
+          ADMIN_USERNAME: "{{ archivebox_admin_username }}"
+          ADMIN_PASSWORD: "{{ archivebox_admin_password }}"
+          SECRET_KEY: "{{ archivebox_secret_key }}"
+          PUBLIC_INDEX: "{{ archivebox_public_index | string }}"
+          PUBLIC_SNAPSHOTS: "{{ archivebox_public_snapshots | string }}"
+          PUBLIC_ADD_VIEW: "{{ archivebox_public_add_view | string }}"
+          CHECK_SSL_VALIDITY: "{{ archivebox_check_ssl_validity | string }}"
+          MEDIA_MAX_SIZE: "{{ archivebox_media_max_size }}"
+          TIMEOUT: "{{ archivebox_timeout }}"
+          SAVE_TITLE: "{{ archivebox_save_title | string }}"
+          SAVE_FAVICON: "{{ archivebox_save_favicon | string }}"
+          SAVE_WGET: "{{ archivebox_save_WGET | string }}"
+          SAVE_WGET_REQUISITES: "{{ archivebox_save_WGET_REQUISITES | string }}"
+          SAVE_SINGLEFILE: "{{ archivebox_save_SINGLEFILE | string }}"
+          SAVE_READABILITY: "{{ archivebox_save_READABILITY | string }}"
+          SAVE_MERCURY: "{{ archivebox_save_MERCURY | string }}"
+          SAVE_PDF: "{{ archivebox_save_PDF | string }}"
+          SAVE_SCREENSHOT: "{{ archivebox_save_SCREENSHOT | string }}"
+          SAVE_DOM: "{{ archivebox_save_DOM | string }}"
+          SAVE_WARC: "{{ archivebox_save_WARC | string }}"
+          SAVE_GIT: "{{ archivebox_save_GIT | string }}"
+          SAVE_MEDIA: "{{ archivebox_save_MEDIA | string }}"
+          SAVE_ARCHIVE_DOT_ORG: "{{ archivebox_save_ARCHIVE_DOT_ORG | string }}"
+          RESOLUTION: "{{ archivebox_resolution }}"
+        command: "server --quick-init 0.0.0.0:8000"
+        labels:
+          traefik.enable: "{{ archivebox_available_externally | string }}"
+          traefik.http.routers.archivebox.rule: "Host(`{{ archivebox_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.archivebox.entrypoints: "web"
+          traefik.http.services.archivebox.loadbalancer.server.port: "8000"
+          homepage.group: "Productivity"
+          homepage.name: "ArchiveBox"
+          homepage.icon: "archivebox"
+          homepage.href: "https://{{ archivebox_hostname }}.{{ ansible_nas_domain }}"
+          homepage.description: "Web Archive & Digital Preservation"
+  when: archivebox_enabled is true
+
+- name: Stop ArchiveBox
+  block:
+    - name: Stop ArchiveBox Container
+      community.docker.docker_container:
+        name: "{{ archivebox_container_name }}"
+        state: absent
+  when: archivebox_enabled is false

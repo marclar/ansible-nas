@@ -1,0 +1,52 @@
+---
+- name: Start Wetty
+  block:
+    - name: Create Wetty Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+      with_items:
+        - "{{ wetty_data_directory }}"
+      become: true
+
+    - name: Create Wetty Docker Container
+      community.docker.docker_container:
+        name: "{{ wetty_container_name }}"
+        image: "{{ wetty_image_name }}:{{ wetty_image_tag }}"
+        pull: true
+        env:
+          TZ: "{{ ansible_nas_timezone }}"
+        ports:
+          - "{{ wetty_port }}:3000"
+        command: >
+          --ssh-host={{ wetty_ssh_host }}
+          --ssh-port={{ wetty_ssh_port }}
+          --ssh-user={{ wetty_ssh_user }}
+          --title="{{ wetty_title }}"
+          --base="{{ wetty_base_path }}"
+          --allow-iframe={{ wetty_allow_iframe }}
+          --force-ssh={{ wetty_force_ssh }}
+          --ssh-auth={{ wetty_ssh_auth }}
+        restart_policy: unless-stopped
+        memory: "{{ wetty_memory }}"
+        labels:
+          traefik.enable: "{{ wetty_available_externally | string }}"
+          traefik.http.routers.wetty.rule: "Host(`{{ wetty_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.services.wetty.loadbalancer.server.port: "3000"
+          homepage.group: System
+          homepage.name: Wetty Terminal
+          homepage.icon: mdi-console
+          homepage.href: "https://{{ wetty_hostname }}.{{ ansible_nas_domain }}"
+          homepage.description: Browser-based SSH Terminal
+  when: wetty_enabled is true
+
+- name: Stop Wetty
+  block:
+    - name: Stop Wetty
+      community.docker.docker_container:
+        name: "{{ wetty_container_name }}"
+        state: absent
+  when: wetty_enabled is false

@@ -1,0 +1,31 @@
+---
+# Enable or disable the application
+wetty_enabled: false
+wetty_available_externally: false
+
+# directories
+wetty_data_directory: "{{ docker_home }}/wetty"
+
+# network
+wetty_hostname: "wetty"
+wetty_port: "3001"
+
+# docker
+wetty_container_name: "wetty"
+wetty_image_name: "wettyoss/wetty"
+wetty_image_tag: "latest"
+
+# specs
+wetty_memory: "512m"
+
+# wetty configuration
+wetty_ssh_host: "{{ ansible_nas_server_ip }}"
+wetty_ssh_port: "22"
+wetty_ssh_user: "{{ ansible_nas_user }}"
+wetty_allow_iframe: "false"
+wetty_title: "Ansible-NAS Terminal"
+
+# Security settings
+wetty_force_ssh: "true"  # Force SSH authentication instead of allowing direct shell access
+wetty_ssh_auth: "password,keyboard-interactive,publickey"
+wetty_base_path: "/"

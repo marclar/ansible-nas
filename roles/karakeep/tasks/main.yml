@@ -54,6 +54,7 @@
         links:
           - "{{ karakeep_meilisearch_container_name }}:meilisearch"
           - "{{ karakeep_chrome_container_name }}:chrome"
+          - "ollama:ollama"
         env:
           DATA_DIR: "/data"
           NEXTAUTH_SECRET: "{{ karakeep_nextauth_secret }}"

@@ -22,6 +22,12 @@
         mode: '0755'
       become: true
 
+    - name: Check if Plex server is already claimed
+      ansible.builtin.stat:
+        path: "{{ plex_config_directory }}/Library/Application Support/Plex Media Server/Preferences.xml"
+      register: plex_preferences
+      become: true
+
     - name: Create Plex Docker Container
       community.docker.docker_container:
         name: "{{ plex_container_name }}"
@@ -44,12 +50,21 @@
           PUID: "{{ plex_user_id }}"
           PGID: "{{ plex_group_id }}"
           VERSION: "{{ plex_version }}"
+          # Only use claim token if server isn't already claimed
+          PLEX_CLAIM: "{{ (plex_claim_token if (plex_claim_token and not plex_preferences.stat.exists)) | default('') }}"
+          HOSTNAME: "{{ plex_server_name | default('plex') }}"
+          ADVERTISE_IP: "http://{{ ansible_nas_server_ip }}:32400/"
         restart_policy: unless-stopped
         memory: "{{ plex_memory }}"
         labels:
           traefik.enable: "{{ plex_available_externally | string }}"
           traefik.http.routers.plex.rule: "Host(`{{ plex_hostname }}.{{ ansible_nas_domain }}`)"
           traefik.http.services.plex.loadbalancer.server.port: "32400"
+
+    - name: Warn if claim token provided but server already claimed
+      ansible.builtin.debug:
+        msg: "WARNING: Plex claim token was provided but server is already claimed. Token will be ignored."
+      when: plex_claim_token and plex_preferences.stat.exists
 
     - name: Set up Plex library scan cron job
       ansible.builtin.cron:

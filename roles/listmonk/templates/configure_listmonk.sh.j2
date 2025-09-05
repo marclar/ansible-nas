@@ -1,0 +1,48 @@
+#!/bin/bash
+# Post-deployment script to configure Listmonk with single opt-in
+# This ensures the configuration persists across container redeployments
+
+set -e
+
+SCRIPT_DIR="$(dirname "$0")"
+SQL_FILE="$SCRIPT_DIR/configure_single_optin.sql"
+MAX_ATTEMPTS=30
+ATTEMPT=0
+
+echo "Starting Listmonk post-deployment configuration..."
+
+# Wait for Listmonk container to be fully ready
+echo "Waiting for Listmonk container to be ready..."
+while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+    if docker exec {{ listmonk_container_name }} curl -s http://localhost:9000/health > /dev/null 2>&1; then
+        echo "Listmonk container is ready!"
+        break
+    fi
+    ATTEMPT=$((ATTEMPT + 1))
+    echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Listmonk not ready yet, waiting 10 seconds..."
+    sleep 10
+done
+
+if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+    echo "ERROR: Listmonk container did not become ready within expected time"
+    exit 1
+fi
+
+# Additional wait to ensure database is fully initialized
+echo "Waiting additional 30 seconds for database initialization..."
+sleep 30
+
+# Execute SQL to configure single opt-in
+echo "Configuring single opt-in for default list..."
+if docker exec {{ listmonk_db_container_name }} psql -U {{ listmonk_db_user }} -d {{ listmonk_db_name }} -f /tmp/configure_single_optin.sql; then
+    echo "SUCCESS: Single opt-in configuration applied successfully!"
+else
+    echo "ERROR: Failed to apply single opt-in configuration"
+    exit 1
+fi
+
+# Verify the configuration
+echo "Verifying configuration..."
+docker exec {{ listmonk_db_container_name }} psql -U {{ listmonk_db_user }} -d {{ listmonk_db_name }} -c "SELECT id, uuid, name, optin FROM lists ORDER BY created_at;" || true
+
+echo "Listmonk post-deployment configuration completed!"

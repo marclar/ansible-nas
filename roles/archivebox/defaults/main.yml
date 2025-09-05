@@ -1,0 +1,54 @@
+---
+# Enable or disable the application
+archivebox_enabled: false
+archivebox_available_externally: false
+
+# Directories
+archivebox_data_directory: "{{ docker_home }}/archivebox"
+archivebox_backup_directory: "{{ nfs_mount_point }}/archivebox"
+
+# Network
+archivebox_hostname: "archivebox"
+archivebox_port: "8000"
+
+# Docker
+archivebox_container_name: "archivebox"
+archivebox_image_name: "archivebox/archivebox"
+archivebox_image_tag: "latest"
+
+# User/Group
+archivebox_user_id: "1000"
+archivebox_group_id: "1000"
+
+# Environment settings
+archivebox_admin_username: "admin"
+archivebox_admin_password: "archive123"
+archivebox_secret_key: "archivebox-secret-key-change-me"
+archivebox_public_index: "True"
+archivebox_public_snapshots: "True"
+archivebox_public_add_view: "False"
+
+# Memory limit (optional)
+archivebox_memory: "2g"
+
+# ArchiveBox specific settings
+archivebox_check_ssl_validity: "True"
+archivebox_media_max_size: "750m"
+archivebox_timeout: "60"
+archivebox_save_title: "True"
+archivebox_save_favicon: "True"
+archivebox_save_WGET: "True"
+archivebox_save_WGET_REQUISITES: "True"
+archivebox_save_SINGLEFILE: "True"
+archivebox_save_READABILITY: "True"
+archivebox_save_MERCURY: "True"
+archivebox_save_PDF: "True"
+archivebox_save_SCREENSHOT: "True"
+archivebox_save_DOM: "True"
+archivebox_save_WARC: "True"
+archivebox_save_GIT: "True"
+archivebox_save_MEDIA: "True"
+archivebox_save_ARCHIVE_DOT_ORG: "True"
+
+# Resolution for screenshots and PDF generation
+archivebox_resolution: "1440,2000"

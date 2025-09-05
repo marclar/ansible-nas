@@ -1,0 +1,57 @@
+---
+restic_backup_enabled: false
+restic_backup_available_externally: false
+
+# Container settings
+restic_backup_container_name: restic-backup
+restic_backup_image: lobaro/restic-backup-docker:latest
+restic_backup_hostname: "restic-backup"
+restic_backup_memory: 2g
+
+# Backup repository location (NFS mount)
+restic_backup_repository: "/mnt/restic-repo"
+restic_backup_repository_path: "/mnt/truenas-media/backups/server/restic"
+
+# Backup password (should be stored in vault)
+restic_backup_password: "changeme"
+
+# Backup schedule (cron format) - 5 AM daily
+restic_backup_schedule: "0 5 * * *"
+
+# Paths to backup
+restic_backup_paths:
+  - /source/docker
+  - /source/etc-docker
+  - /source/etc-systemd
+
+# Host paths to mount into container
+restic_backup_host_paths:
+  docker: "/home/mk/docker"
+  etc_docker: "/etc/docker"
+  etc_systemd: "/etc/systemd"
+
+# Retention policy
+restic_backup_keep_daily: "7"
+restic_backup_keep_weekly: "4"
+restic_backup_keep_monthly: "6"
+restic_backup_keep_yearly: "1"
+
+# Forget arguments for pruning old snapshots
+restic_backup_forget_args: "--prune --keep-daily {{ restic_backup_keep_daily }} --keep-weekly {{ restic_backup_keep_weekly }} --keep-monthly {{ restic_backup_keep_monthly }} --keep-yearly {{ restic_backup_keep_yearly }}"
+
+# Pre and post backup hooks
+restic_backup_pre_commands: ""
+restic_backup_post_commands: ""
+
+# Check data integrity weekly (Sunday at 3 AM)
+restic_backup_check_cron: "0 3 * * 0"
+
+# Notification settings (optional)
+restic_backup_notification_url: ""
+
+# Backup tags
+restic_backup_tags: "ansible-nas,docker,automated"
+
+# User and group IDs
+restic_backup_user_id: "{{ ansible_user_uid | default(1000) }}"
+restic_backup_group_id: "{{ ansible_user_gid | default(1000) }}"

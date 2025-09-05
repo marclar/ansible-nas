@@ -27,6 +27,7 @@ plex_audiobooks_permissions: "rw"
 
 # network
 plex_hostname: "plex"
+plex_server_name: "1815"
 
 # docker
 plex_container_name: "plex"
@@ -42,3 +43,7 @@ plex_memory: "2g"
 
 # see https://hub.docker.com/r/linuxserver/plex for details on this setting
 plex_version: "docker"
+
+# Plex claim token - get from https://www.plex.tv/claim/
+# Token expires after 4 minutes, so generate right before deploying
+plex_claim_token: ""

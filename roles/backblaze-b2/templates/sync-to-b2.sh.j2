@@ -1,0 +1,109 @@
+#!/bin/bash
+
+# Backblaze B2 Sync Script
+# Syncs local backups to Backblaze B2 cloud storage
+
+set -euo pipefail
+
+# Configuration
+SOURCE_DIR="/source"
+DEST_B2="backblaze-b2:{{ backblaze_b2_bucket_name }}"
+LOG_FILE="{{ backblaze_b2_log_file }}"
+LOG_LEVEL="{{ backblaze_b2_log_level }}"
+BANDWIDTH_LIMIT="{{ backblaze_b2_bandwidth_limit }}"
+SYNC_OPTIONS="{{ backblaze_b2_sync_options }}"
+
+# Function to log messages
+log_message() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "${LOG_FILE}"
+}
+
+# Function to send notification
+send_notification() {
+    local status="$1"
+    local message="$2"
+    
+    {% if backblaze_b2_notification_url %}
+    if [[ -n "{{ backblaze_b2_notification_url }}" ]]; then
+        curl -s -X POST "{{ backblaze_b2_notification_url }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\":\"Backblaze B2 Sync: ${status} - ${message}\"}" \
+            || true
+    fi
+    {% endif %}
+}
+
+# Function to clean up old backups (optional retention policy)
+cleanup_old_backups() {
+    log_message "Checking for old backups to clean up..."
+    
+    # This would need to be implemented based on B2 file listing and age
+    # For now, just log that we're skipping cleanup
+    log_message "Cleanup skipped - implement retention policy if needed"
+}
+
+# Main sync function
+sync_to_b2() {
+    local start_time=$(date +%s)
+    
+    log_message "Starting Backblaze B2 sync..."
+    log_message "Source: ${SOURCE_DIR}"
+    log_message "Destination: ${DEST_B2}"
+    
+    # Build rclone command
+    local cmd="rclone sync"
+    cmd="${cmd} --config /config/rclone.conf"
+    cmd="${cmd} --log-level ${LOG_LEVEL}"
+    cmd="${cmd} --log-file ${LOG_FILE}"
+    
+    # Add bandwidth limit if specified
+    if [[ "${BANDWIDTH_LIMIT}" != "0" ]]; then
+        cmd="${cmd} --bwlimit ${BANDWIDTH_LIMIT}k"
+        log_message "Bandwidth limit: ${BANDWIDTH_LIMIT} KB/s"
+    fi
+    
+    # Add sync options
+    cmd="${cmd} ${SYNC_OPTIONS}"
+    
+    # Add source and destination
+    cmd="${cmd} ${SOURCE_DIR} ${DEST_B2}"
+    
+    log_message "Executing: ${cmd}"
+    
+    # Execute the sync
+    if eval "${cmd}"; then
+        local end_time=$(date +%s)
+        local duration=$((end_time - start_time))
+        local success_msg="Sync completed successfully in ${duration} seconds"
+        log_message "${success_msg}"
+        send_notification "SUCCESS" "${success_msg}"
+        
+        # Optional: Clean up old backups
+        # cleanup_old_backups
+        
+        return 0
+    else
+        local error_msg="Sync failed with exit code $?"
+        log_message "ERROR: ${error_msg}"
+        send_notification "FAILED" "${error_msg}"
+        return 1
+    fi
+}
+
+# Check if source directory exists and is not empty
+if [[ ! -d "${SOURCE_DIR}" ]]; then
+    error_msg="Source directory ${SOURCE_DIR} does not exist"
+    log_message "ERROR: ${error_msg}"
+    send_notification "ERROR" "${error_msg}"
+    exit 1
+fi
+
+# Check if we have any files to sync
+if [[ -z "$(find "${SOURCE_DIR}" -type f -print -quit)" ]]; then
+    info_msg="No files found in source directory ${SOURCE_DIR}, skipping sync"
+    log_message "INFO: ${info_msg}"
+    exit 0
+fi
+
+# Perform the sync
+sync_to_b2

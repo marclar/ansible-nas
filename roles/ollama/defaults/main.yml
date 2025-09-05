@@ -1,0 +1,31 @@
+---
+ollama_enabled: false
+ollama_available_externally: false
+
+# directories
+ollama_data_directory: "{{ docker_home }}/ollama"
+
+# network
+ollama_port: 11434
+ollama_hostname: "ollama"
+
+# Docker
+ollama_container_name: ollama
+ollama_image_name: "ollama/ollama"
+ollama_image_version: "latest"
+
+# Models to download by default
+ollama_default_models:
+  - "llama3.2:3b"  # Lightweight text model for automatic tagging
+  - "llava:7b"     # Vision model for image analysis (optional)
+
+# Model configuration for Karakeep
+ollama_text_model: "llama3.2:3b"
+ollama_image_model: "llava:7b"
+ollama_context_length: "4096"
+
+# GPU support (optional - set to true if you have NVIDIA GPU with Docker GPU support)
+ollama_gpu_enabled: false
+
+# specs
+ollama_memory: 4g

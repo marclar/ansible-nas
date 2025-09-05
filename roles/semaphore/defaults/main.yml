@@ -1,0 +1,53 @@
+---
+# enable or disable the application
+semaphore_enabled: false
+semaphore_available_externally: false
+
+# directories
+semaphore_data_directory: "{{ docker_home }}/semaphore"
+semaphore_config_directory: "{{ semaphore_data_directory }}/config"
+semaphore_db_directory: "{{ semaphore_data_directory }}/postgres"
+
+# network
+semaphore_hostname: "semaphore"
+semaphore_port: "3001"
+
+# docker
+semaphore_container_name: "semaphore"
+semaphore_postgres_container_name: "semaphore-postgres"
+semaphore_image_name: "semaphoreui/semaphore"
+semaphore_image_tag: "latest"
+semaphore_postgres_image_name: "postgres"
+semaphore_postgres_image_tag: "15-alpine"
+
+# specs
+semaphore_memory: "1g"
+semaphore_postgres_memory: "512m"
+
+# database settings
+semaphore_db_name: "semaphore"
+semaphore_db_user: "semaphore"
+semaphore_db_password: "{{ vault_semaphore_db_password | default('changeme123') }}"
+semaphore_db_host: "{{ semaphore_postgres_container_name }}"
+semaphore_db_port: "5432"
+
+# admin user settings
+semaphore_admin_name: "Admin"
+semaphore_admin_username: "admin"
+semaphore_admin_email: "{{ ansible_nas_email }}"
+semaphore_admin_password: "{{ vault_semaphore_admin_password | default('changeme123') }}"
+
+# semaphore configuration
+semaphore_web_host: "0.0.0.0:3000"  # Internal port is always 3000
+semaphore_tmp_path: "/tmp/semaphore"
+semaphore_ansible_host_key_checking: "false"
+semaphore_access_key_encryption: "{{ vault_semaphore_access_key_encryption | default('changeme-encryption-key-32-chars') }}"
+semaphore_cookie_hash: "{{ vault_semaphore_cookie_hash | default('changeme-cookie-hash-32-chars-long') }}"
+semaphore_cookie_encryption: "{{ vault_semaphore_cookie_encryption | default('changeme-cookie-encryption-32-chars') }}"
+
+# ansible paths - mount the control node's ansible directory
+semaphore_ansible_project_path: "/ansible-nas"
+semaphore_local_ansible_path: "/Users/mk/ansible-nas"
+
+# network for inter-container communication
+semaphore_docker_network: "semaphore-network"

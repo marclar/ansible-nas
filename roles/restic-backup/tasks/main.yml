@@ -1,0 +1,132 @@
+---
+- name: Start Restic Backup
+  block:
+    - name: Create Restic backup repository directory on NFS
+      ansible.builtin.file:
+        path: "{{ restic_backup_repository_path }}"
+        state: directory
+        mode: "0755"
+      become: yes
+
+    - name: Create pre-backup script
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          echo "Starting backup at $(date)"
+          
+          # Stop databases for consistent backups
+          echo "Stopping database containers for consistent backup..."
+          docker stop listmonk-db 2>/dev/null || true
+          docker stop karakeep-db 2>/dev/null || true
+          docker stop n8n-postgres 2>/dev/null || true
+          
+          # Wait for services to fully stop
+          sleep 5
+          
+          {{ restic_backup_pre_commands }}
+        dest: "/tmp/restic-pre-backup.sh"
+        mode: "0755"
+
+    - name: Create post-backup script
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          echo "Backup completed at $(date)"
+          
+          # Restart database containers
+          echo "Restarting database containers..."
+          docker start listmonk-db 2>/dev/null || true
+          docker start karakeep-db 2>/dev/null || true
+          docker start n8n-postgres 2>/dev/null || true
+          
+          {{ restic_backup_post_commands }}
+          
+          # Optional: Send notification
+          {% if restic_backup_notification_url %}
+          curl -X POST {{ restic_backup_notification_url }} \
+            -H "Content-Type: application/json" \
+            -d '{"text":"Restic backup completed successfully"}'
+          {% endif %}
+        dest: "/tmp/restic-post-backup.sh"
+        mode: "0755"
+
+    - name: Create Restic Backup Container
+      community.docker.docker_container:
+        name: "{{ restic_backup_container_name }}"
+        image: "{{ restic_backup_image }}"
+        pull: true
+        state: started
+        restart_policy: unless-stopped
+        memory: "{{ restic_backup_memory }}"
+        hostname: "{{ restic_backup_hostname }}"
+        volumes:
+          # Mount backup repository
+          - "{{ restic_backup_repository_path }}:{{ restic_backup_repository }}:rw"
+          # Mount paths to backup (read-only for safety)
+          - "{{ restic_backup_host_paths.docker }}:/source/docker:ro"
+          - "{{ restic_backup_host_paths.etc_docker }}:/source/etc-docker:ro"
+          - "{{ restic_backup_host_paths.etc_systemd }}:/source/etc-systemd:ro"
+          # Mount hook scripts
+          - "/tmp/restic-pre-backup.sh:/hooks/pre-backup.sh:ro"
+          - "/tmp/restic-post-backup.sh:/hooks/post-backup.sh:ro"
+          # Docker socket for container management in hooks
+          - "/var/run/docker.sock:/var/run/docker.sock:rw"
+        env:
+          # Repository configuration
+          RESTIC_REPOSITORY: "{{ restic_backup_repository }}"
+          RESTIC_PASSWORD: "{{ restic_backup_password }}"
+          
+          # Backup configuration
+          BACKUP_CRON: "{{ restic_backup_schedule }}"
+          RESTIC_BACKUP_SOURCES: "{{ restic_backup_paths | join(' ') }}"
+          RESTIC_BACKUP_TAGS: "{{ restic_backup_tags }}"
+          
+          # Retention policy
+          RESTIC_FORGET_ARGS: "{{ restic_backup_forget_args }}"
+          
+          # Data integrity check
+          CHECK_CRON: "{{ restic_backup_check_cron }}"
+          
+          # Hooks
+          PRE_BACKUP_COMMAND: "/hooks/pre-backup.sh"
+          POST_BACKUP_COMMAND: "/hooks/post-backup.sh"
+          
+          # User configuration
+          RUN_ON_STARTUP: "false"
+          TZ: "{{ ansible_nas_timezone }}"
+          UID: "{{ restic_backup_user_id }}"
+          GID: "{{ restic_backup_group_id }}"
+        labels:
+          traefik.enable: "false"
+
+    - name: Initialize Restic repository if needed
+      community.docker.docker_container_exec:
+        container: "{{ restic_backup_container_name }}"
+        command: >
+          sh -c "restic snapshots || restic init"
+      register: restic_init
+      failed_when: false
+      changed_when: "'created restic repository' in restic_init.stdout"
+
+    - name: Display repository initialization status
+      ansible.builtin.debug:
+        msg: "{{ 'Repository initialized' if restic_init.changed else 'Repository already exists' }}"
+
+  when: restic_backup_enabled is true
+
+- name: Stop Restic Backup
+  block:
+    - name: Stop Restic Backup Container
+      community.docker.docker_container:
+        name: "{{ restic_backup_container_name }}"
+        state: absent
+
+    - name: Remove backup scripts
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /tmp/restic-pre-backup.sh
+        - /tmp/restic-post-backup.sh
+
+  when: restic_backup_enabled is false

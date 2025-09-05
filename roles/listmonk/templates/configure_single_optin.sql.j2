@@ -1,0 +1,20 @@
+-- Configure default list to use single opt-in
+-- This script runs after Listmonk container deployment to ensure permanent configuration
+
+-- Update the default list (should be the first list created)
+UPDATE lists 
+SET optin = 'single' 
+WHERE uuid = '643ee4e8-5514-43a3-999c-d320fd0d627a'
+   OR (optin = 'double' AND created_at = (SELECT MIN(created_at) FROM lists));
+
+-- Also set single opt-in as default for any new lists that might be created
+-- This updates any existing double opt-in lists to single opt-in if they are the default
+UPDATE lists 
+SET optin = 'single' 
+WHERE name = 'Default list' 
+   OR id = 1;
+
+-- Verify the change
+SELECT id, uuid, name, optin, created_at 
+FROM lists 
+ORDER BY created_at;

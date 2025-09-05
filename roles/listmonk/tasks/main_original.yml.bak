@@ -1,0 +1,148 @@
+---
+- name: Start Listmonk
+  block:
+    - name: Create Listmonk Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      with_items:
+        - "{{ listmonk_data_directory }}"
+        - "{{ listmonk_db_directory }}"
+
+    - name: Create Listmonk Database Container
+      community.docker.docker_container:
+        name: "{{ listmonk_db_container_name }}"
+        image: "{{ listmonk_db_image }}"
+        pull: true
+        state: started
+        restart_policy: unless-stopped
+        volumes:
+          - "{{ listmonk_db_directory }}:/var/lib/postgresql/data:rw"
+        env:
+          POSTGRES_USER: "{{ listmonk_db_user }}"
+          POSTGRES_PASSWORD: "{{ listmonk_db_password }}"
+          POSTGRES_DB: "{{ listmonk_db_name }}"
+        labels:
+          traefik.enable: "false"
+
+    - name: Wait for database to be ready
+      ansible.builtin.wait_for:
+        timeout: 30
+
+    - name: Create Listmonk Container
+      community.docker.docker_container:
+        name: "{{ listmonk_container_name }}"
+        image: "{{ listmonk_image_name }}:{{ listmonk_image_tag }}"
+        pull: true
+        state: started
+        restart_policy: unless-stopped
+        memory: "{{ listmonk_memory if listmonk_memory else omit }}"
+        volumes:
+          - "{{ listmonk_data_directory }}:/listmonk/uploads:rw"
+        ports:
+          - "{{ listmonk_port }}:9000"
+        env:
+          TZ: "{{ ansible_nas_timezone }}"
+          LISTMONK_app__address: "0.0.0.0:9000"
+          LISTMONK_db__host: "{{ listmonk_db_container_name }}"
+          LISTMONK_db__port: "5432"
+          LISTMONK_db__user: "{{ listmonk_db_user }}"
+          LISTMONK_db__password: "{{ listmonk_db_password }}"
+          LISTMONK_db__database: "{{ listmonk_db_name }}"
+          LISTMONK_db__ssl_mode: "disable"
+          LISTMONK_admin__username: "{{ listmonk_admin_user }}"
+          LISTMONK_admin__password: "{{ listmonk_admin_password }}"
+          LISTMONK_ORIGIN_0: "https://dramanoes.com"
+          LISTMONK_app__enable_public_subscription_page: "true"
+          LISTMONK_app__enable_public_archive: "true"
+          LISTMONK_security__enable_captcha: "false"
+        links:
+          - "{{ listmonk_db_container_name }}"
+        labels:
+          traefik.enable: "{{ listmonk_available_externally | string }}"
+          traefik.http.routers.listmonk.rule: "Host(`{{ listmonk_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.listmonk.entrypoints: "web"
+          traefik.http.services.listmonk.loadbalancer.server.port: "9000"
+          # CORS middleware
+          traefik.http.middlewares.listmonk-cors.headers.accesscontrolalloworiginlist: "https://dramanoes.com,http://localhost:4321"
+          traefik.http.middlewares.listmonk-cors.headers.accesscontrolallowmethods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS"
+          traefik.http.middlewares.listmonk-cors.headers.accesscontrolallowheaders: "Accept,Authorization,Cache-Control,Content-Type,DNT,If-Modified-Since,Keep-Alive,Origin,User-Agent,X-Requested-With"
+          traefik.http.middlewares.listmonk-cors.headers.accesscontrolexposeheaders: "Authorization"
+          traefik.http.middlewares.listmonk-cors.headers.accesscontrolmaxage: "1728000"
+          traefik.http.middlewares.listmonk-cors.headers.addvaryheader: "true"
+          traefik.http.middlewares.listmonk-cors.headers.accesscontrolallowcredentials: "false"
+          # Middleware chain for CORS
+          traefik.http.routers.listmonk.middlewares: "listmonk-cors"
+
+    - name: Create configuration scripts directory
+      ansible.builtin.file:
+        path: "{{ listmonk_data_directory }}/scripts"
+        state: directory
+        mode: "0755"
+
+    - name: Deploy SQL configuration script
+      ansible.builtin.template:
+        src: configure_single_optin.sql.j2
+        dest: "{{ listmonk_data_directory }}/scripts/configure_single_optin.sql"
+        mode: "0644"
+
+    - name: Deploy post-deployment configuration script
+      ansible.builtin.template:
+        src: configure_listmonk.sh.j2
+        dest: "{{ listmonk_data_directory }}/scripts/configure_listmonk.sh"
+        mode: "0755"
+
+    - name: Copy SQL script to database container
+      ansible.builtin.shell: >
+        docker cp "{{ listmonk_data_directory }}/scripts/configure_single_optin.sql"
+        {{ listmonk_db_container_name }}:/tmp/configure_single_optin.sql
+
+    - name: Wait for Listmonk application to be ready
+      ansible.builtin.uri:
+        url: "http://localhost:{{ listmonk_port }}/health"
+        method: GET
+        status_code: 200
+      register: listmonk_health
+      until: listmonk_health.status == 200
+      retries: 30
+      delay: 10
+      ignore_errors: true
+
+    - name: Configure single opt-in for default list
+      ansible.builtin.shell: >
+        docker exec {{ listmonk_db_container_name }} psql -U {{ listmonk_db_user }} -d {{ listmonk_db_name }} -c 
+        "UPDATE lists SET optin = 'single' WHERE uuid = '643ee4e8-5514-43a3-999c-d320fd0d627a' 
+        OR (optin = 'double' AND created_at = (SELECT MIN(created_at) FROM lists));"
+      register: sql_result
+      ignore_errors: true
+
+    - name: Verify single opt-in configuration
+      ansible.builtin.shell: >
+        docker exec {{ listmonk_db_container_name }} psql -U {{ listmonk_db_user }} -d {{ listmonk_db_name }} -c 
+        "SELECT id, uuid, name, optin FROM lists ORDER BY created_at;"
+      register: verification_result
+      ignore_errors: true
+
+    - name: Display configuration results
+      ansible.builtin.debug:
+        msg: |
+          SQL Update Result: {{ sql_result.stdout if sql_result.stdout else 'No output' }}
+          Current List Configuration:
+          {{ verification_result.stdout if verification_result.stdout else 'No output' }}
+
+  when: listmonk_enabled is true
+
+- name: Stop Listmonk
+  block:
+    - name: Stop Listmonk Container
+      community.docker.docker_container:
+        name: "{{ listmonk_container_name }}"
+        state: absent
+
+    - name: Stop Listmonk Database Container
+      community.docker.docker_container:
+        name: "{{ listmonk_db_container_name }}"
+        state: absent
+
+  when: listmonk_enabled is false
