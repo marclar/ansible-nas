@@ -15,8 +15,8 @@ Ansible-NAS is an Infrastructure as Code solution that replaces commercial NAS s
 
 ### **Core Infrastructure:**
 - **Ansible Control Node:** MacOS (mk@MacBook)
-- **Target Server:** Ubuntu 22.04 LTS (192.168.12.208)
-- **Storage Backend:** TrueNAS SCALE NFS (192.168.12.227) - 8.6TB capacity
+- **Target Server:** Ubuntu 22.04 LTS (192.168.12.211)
+- **Storage Backend:** TrueNAS SCALE NFS (192.168.12.226) - 8.6TB capacity
 - **Network Access:** Cloudflare Tunnel + Local network
 - **Domain:** 1815.space with wildcard SSL certificates
 
@@ -58,7 +58,7 @@ Ansible-NAS is an Infrastructure as Code solution that replaces commercial NAS s
 
 ### **NFS Mount Setup:**
 ```bash
-Source: 192.168.12.227:/mnt/pool0/media
+Source: 192.168.12.226:/mnt/pool0/media
 Mount: /mnt/truenas-media
 Size: 8.6TB (738GB used, 91% available)
 Type: NFSv3, auto-mounted via /etc/fstab
@@ -266,14 +266,14 @@ ansible-vault encrypt /tmp/vault.yml --vault-password-file=.vault_pass --output=
 ### **Local Network Access:**
 ```bash
 # Via hosts file (add to /etc/hosts):
-192.168.12.208 home.1815.space plex.1815.space radarr.1815.space sonarr.1815.space unmanic.1815.space
+192.168.12.211 home.1815.space plex.1815.space radarr.1815.space sonarr.1815.space unmanic.1815.space
 
 # Direct port access:
-http://192.168.12.208:11111  # Homepage
-http://192.168.12.208:32400  # Plex
-http://192.168.12.208:7878   # Radarr
-http://192.168.12.208:8989   # Sonarr
-http://192.168.12.208:8889   # Unmanic
+http://192.168.12.211:11111  # Homepage
+http://192.168.12.211:32400  # Plex
+http://192.168.12.211:7878   # Radarr
+http://192.168.12.211:8989   # Sonarr
+http://192.168.12.211:8889   # Unmanic
 ```
 
 ## 🔄 Maintenance Procedures
@@ -287,16 +287,16 @@ http://192.168.12.208:8889   # Unmanic
 ### **Troubleshooting:**
 ```bash
 # Check service status
-ssh mk@192.168.12.208 "docker ps"
+ssh mk@192.168.12.211 "docker ps"
 
 # View service logs
-ssh mk@192.168.12.208 "docker logs {service_name}"
+ssh mk@192.168.12.211 "docker logs {service_name}"
 
 # Restart specific service
-ssh mk@192.168.12.208 "docker restart {service_name}"
+ssh mk@192.168.12.211 "docker restart {service_name}"
 
 # Check NFS mount
-ssh mk@192.168.12.208 "df -h | grep truenas"
+ssh mk@192.168.12.211 "df -h | grep truenas"
 ```
 
 ## 📊 Current System Status
@@ -310,7 +310,7 @@ ssh mk@192.168.12.208 "df -h | grep truenas"
 ### **Recent Changes:**
 - ✅ **Configured Unmanic service** in Homepage dashboard and Traefik routing (Aug 31, 2025)
 - ✅ **Updated Homepage layout** with improved service organization (Aug 31, 2025)
-- ✅ **Migrated to new physical server** (192.168.12.208) (Aug 30, 2025)
+- ✅ **Migrated to new physical server** (192.168.12.211) (Aug 30, 2025)
 - ✅ **Updated Cloudflare tunnel token** and re-established secure connection (Aug 30, 2025)
 - ✅ **Configured SSH key-only authentication** with password auth disabled (Aug 30, 2025)
 - ✅ **Set up passwordless sudo** for automation user (Aug 30, 2025)
@@ -334,4 +334,4 @@ The system is fully operational, properly configured, and ready for daily use. A
 ---
 **Last Updated:** August 31, 2025  
 **Maintained By:** mk  
-**Deployment Status:** ✅ Active and Stable on Physical Server (192.168.12.208)
+**Deployment Status:** ✅ Active and Stable on Physical Server (192.168.12.211)

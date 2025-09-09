@@ -123,7 +123,7 @@ launchctl load ~/Library/LaunchAgents/vm-autostart.plist
 ### NFS Mount Failed
 - Verify TrueNAS IP is correct
 - Check NFS export settings on TrueNAS
-- Test mount manually: `sudo mount -t nfs 192.168.12.227:/mnt/pool0/media /mnt/test`
+- Test mount manually: `sudo mount -t nfs 192.168.12.226:/mnt/pool0/media /mnt/test`
 
 ### Services Not Accessible
 - Check Docker is running: `systemctl status docker`

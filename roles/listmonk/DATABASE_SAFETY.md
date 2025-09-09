@@ -56,7 +56,7 @@ The database is ONLY initialized when:
 ### Creating a Manual Backup
 ```bash
 # From the Ansible control node
-ssh mk@192.168.12.208 "docker exec listmonk-db pg_dump -U listmonk listmonk" > listmonk_backup_$(date +%Y%m%d).sql
+ssh mk@192.168.12.211 "docker exec listmonk-db pg_dump -U listmonk listmonk" > listmonk_backup_$(date +%Y%m%d).sql
 ```
 
 ### Restoring from Backup
@@ -74,13 +74,13 @@ docker start listmonk
 ### Checking Database Status
 ```bash
 # Check if database exists
-ssh mk@192.168.12.208 "ls -la /home/mk/docker/listmonk-db/PG_VERSION"
+ssh mk@192.168.12.211 "ls -la /home/mk/docker/listmonk-db/PG_VERSION"
 
 # Check table counts
-ssh mk@192.168.12.208 "docker exec listmonk-db psql -U listmonk -d listmonk -c 'SELECT COUNT(*) FROM subscribers;'"
+ssh mk@192.168.12.211 "docker exec listmonk-db psql -U listmonk -d listmonk -c 'SELECT COUNT(*) FROM subscribers;'"
 
 # List recent backups
-ssh mk@192.168.12.208 "ls -lht /home/mk/docker/listmonk/auto_backups/ | head -10"
+ssh mk@192.168.12.211 "ls -lht /home/mk/docker/listmonk/auto_backups/ | head -10"
 ```
 
 ## Deployment Best Practices

@@ -11,7 +11,7 @@ This guide ensures you can deploy Ansible-NAS to a brand-new VM without manual c
    - SSH access enabled
 
 2. **NFS Storage (if using TrueNAS):**
-   - TrueNAS server at 192.168.12.227 (or update in configuration)
+   - TrueNAS server at 192.168.12.226 (or update in configuration)
    - NFS share exported at `/mnt/pool0/media`
    - Proper permissions set for the media directories
 
@@ -50,7 +50,7 @@ On the target server, create mount point and add to fstab:
 ```bash
 ssh mk@192.168.12.100
 sudo mkdir -p /mnt/truenas-media
-sudo bash -c 'echo "192.168.12.227:/mnt/pool0/media /mnt/truenas-media nfs defaults 0 0" >> /etc/fstab'
+sudo bash -c 'echo "192.168.12.226:/mnt/pool0/media /mnt/truenas-media nfs defaults 0 0" >> /etc/fstab'
 sudo mount -a
 ```
 

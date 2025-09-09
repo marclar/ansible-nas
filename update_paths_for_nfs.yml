@@ -5,7 +5,7 @@
 # Add these to your inventories/production/group_vars/nas.yml file
 # after the NFS mount is configured and working
 
-# NFS Mount Point - TrueNAS 192.168.12.227:/mnt/pool0/media
+# NFS Mount Point - TrueNAS 192.168.12.226:/mnt/pool0/media
 nfs_mount_point: "/mnt/truenas-media"
 
 # Updated storage paths to use NFS mount

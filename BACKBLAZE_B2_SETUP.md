@@ -78,7 +78,7 @@ backblaze_b2_retention_days: "90"  # Keep backups for 90 days
 
 2. Check the deployment:
    ```bash
-   ssh mk@192.168.12.208 "docker ps | grep backblaze-b2"
+   ssh mk@192.168.12.211 "docker ps | grep backblaze-b2"
    ```
 
 ## Step 5: Verify the Setup
@@ -86,19 +86,19 @@ backblaze_b2_retention_days: "90"  # Keep backups for 90 days
 ### Test Connection
 ```bash
 # Test Backblaze B2 connection
-ssh mk@192.168.12.208 "docker exec backblaze-b2 rclone --config /config/rclone.conf lsd backblaze-b2:"
+ssh mk@192.168.12.211 "docker exec backblaze-b2 rclone --config /config/rclone.conf lsd backblaze-b2:"
 ```
 
 ### Manual Sync Test
 ```bash
 # Trigger an immediate sync
-ssh mk@192.168.12.208 "docker exec backblaze-b2 /scripts/sync-to-b2.sh"
+ssh mk@192.168.12.211 "docker exec backblaze-b2 /scripts/sync-to-b2.sh"
 ```
 
 ### Monitor Logs
 ```bash
 # Check sync logs
-ssh mk@192.168.12.208 "docker exec backblaze-b2 tail -f /logs/rclone.log"
+ssh mk@192.168.12.211 "docker exec backblaze-b2 tail -f /logs/rclone.log"
 ```
 
 ## Configuration Options
@@ -126,13 +126,13 @@ backblaze_b2_sync_schedule: "0 2 * * *"  # Daily at 2 AM
 ### Check Sync Status
 ```bash
 # View last sync results
-ssh mk@192.168.12.208 "docker exec backblaze-b2 tail -20 /logs/rclone.log"
+ssh mk@192.168.12.211 "docker exec backblaze-b2 tail -20 /logs/rclone.log"
 ```
 
 ### Container Health
 ```bash
 # Check container status
-ssh mk@192.168.12.208 "docker exec backblaze-b2 /scripts/health-check.sh"
+ssh mk@192.168.12.211 "docker exec backblaze-b2 /scripts/health-check.sh"
 ```
 
 ### Storage Usage

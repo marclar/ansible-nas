@@ -9,12 +9,39 @@
         group: 1000
       with_items:
         - "{{ n8n_data_directory }}"
+        - "{{ n8n_data_directory }}/dockerfile"
+
+    - name: Copy Dockerfile for n8n with Chrome
+      ansible.builtin.copy:
+        src: Dockerfile
+        dest: "{{ n8n_data_directory }}/dockerfile/Dockerfile"
+        owner: 1000
+        group: 1000
+        mode: '0644'
+
+    - name: Copy entrypoint script for n8n
+      ansible.builtin.copy:
+        src: entrypoint.sh
+        dest: "{{ n8n_data_directory }}/dockerfile/entrypoint.sh"
+        owner: 1000
+        group: 1000
+        mode: '0755'
+
+    - name: Build custom n8n image with Chrome
+      community.docker.docker_image:
+        name: "n8n-with-chrome"
+        tag: "latest"
+        source: build
+        build:
+          path: "{{ n8n_data_directory }}/dockerfile"
+          pull: true
+        state: present
 
     - name: Create n8n Docker Container
       community.docker.docker_container:
         name: "{{ n8n_container_name }}"
-        image: "{{ n8n_image_name }}:{{ n8n_image_version }}"
-        pull: true
+        image: "n8n-with-chrome:latest"
+        pull: false
         ports:
           - "{{ n8n_port }}:5678"
         volumes:
@@ -23,10 +50,20 @@
           - "/mnt/truenas-media:/mnt/truenas-media:rw"
         restart_policy: unless-stopped
         memory: "{{ n8n_memory }}"
+        shm_size: "2G"
+        capabilities:
+          - SYS_ADMIN
+        security_opts:
+          - seccomp=unconfined
         env:
           N8N_BASIC_AUTH_ACTIVE: "true"
           N8N_BASIC_AUTH_USER: "{{ n8n_basic_auth_user }}"
           N8N_BASIC_AUTH_PASSWORD: "{{ n8n_basic_auth_password }}"
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+          PUPPETEER_EXECUTABLE_PATH: "/usr/bin/chromium-browser"
+          PUPPETEER_ARGS: "--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage"
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+          PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: "/usr/bin/chromium-browser"
         labels:
           traefik.enable: "{{ n8n_available_externally | string }}"
           traefik.http.routers.n8n.rule: "Host(`{{ n8n_hostname }}.{{ ansible_nas_domain }}`)"

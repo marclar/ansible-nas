@@ -122,7 +122,7 @@ All hard-coded IPs have been replaced with variables:
 | Old Hard-coded Value | New Variable | Location |
 |---------------------|--------------|----------|
 | 192.168.12.100 | `ansible_nas_server_ip` | network.yml |
-| 192.168.12.227 | `truenas_server_ip` | network.yml |
+| 192.168.12.226 | `truenas_server_ip` | network.yml |
 | 192.168.12.0/24 | `local_network_subnet` | network.yml |
 
 ## Service URLs After Migration

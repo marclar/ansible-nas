@@ -19,7 +19,7 @@ ansible_nas_email: "admin@1815.space"  # Change to your email
 ansible_nas_user: mk  # Set to your actual username
 
 # Server IP Configuration
-ansible_nas_server_ip: "192.168.12.208"  # Main server IP address
+ansible_nas_server_ip: "192.168.12.211"  # Main server IP address
 
 # Docker configuration (keep on fast local storage)
 docker_home: "/home/mk/docker"
@@ -67,8 +67,8 @@ homepage_title: "1815.space Home"
 homepage_locale: en-US
 homepage_hostname: "home"  # Use 'home' instead of 'homepage'
 
-# Override allowed hosts to include your domain
-homepage_allowed_hosts: "home.1815.space"
+# Override allowed hosts to include your domain and IP addresses
+homepage_allowed_hosts: "home.1815.space,192.168.12.211,localhost"
 
 # Homepage bookmarks configuration (empty to remove default bookmarks)
 homepage_bookmarks_yaml: []
@@ -204,7 +204,7 @@ plex_group_id: "1000"
 plex_server_name: "1815"
 # To claim your Plex server, get a token from https://www.plex.tv/claim/
 # Token expires after 4 minutes, so generate it right before deploying
-plex_claim_token: ""  # Server claimed as "1815"
+plex_claim_token: "claim-BR3sWTxb81MuyLziXWR6"  # Server claimed as "1815"
 
 radarr_enabled: true
 radarr_available_externally: true

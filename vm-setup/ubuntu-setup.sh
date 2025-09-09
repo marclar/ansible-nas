@@ -95,8 +95,8 @@ print_success "Directories created"
 print_status "Configuring NFS mount..."
 echo ""
 print_warning "Enter your TrueNAS NFS share details:"
-read -p "TrueNAS IP address [192.168.12.227]: " TRUENAS_IP
-TRUENAS_IP=${TRUENAS_IP:-192.168.12.227}
+read -p "TrueNAS IP address [192.168.12.226]: " TRUENAS_IP
+TRUENAS_IP=${TRUENAS_IP:-192.168.12.226}
 
 read -p "NFS share path [/mnt/pool0/media]: " NFS_PATH
 NFS_PATH=${NFS_PATH:-/mnt/pool0/media}

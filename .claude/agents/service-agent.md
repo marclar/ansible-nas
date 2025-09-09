@@ -76,13 +76,13 @@ When invoked to deploy a new service, you must follow these steps:
    - Enable the service by setting `{service}_enabled: true`
 
 8. **Deploy and Verify**
-   - **IMPORTANT: Check server connectivity first** with `ping 192.168.12.208` or `ssh mk@192.168.12.208 echo "connected"`
+   - **IMPORTANT: Check server connectivity first** with `ping 192.168.12.211` or `ssh mk@192.168.12.211 echo "connected"
    - If server is not reachable, document deployment commands for later execution
    - Run deployment using `ansible-playbook` with vault password file
-   - Check Docker container status: `ssh mk@192.168.12.208 "docker ps --filter name={service}"`
-   - Verify Traefik labels: `ssh mk@192.168.12.208 "docker inspect {service} | grep -A 5 traefik"`
+   - Check Docker container status: `ssh mk@192.168.12.211 "docker ps --filter name={service}"
+   - Verify Traefik labels: `ssh mk@192.168.12.211 "docker inspect {service} | grep -A 5 traefik"
    - Test service accessibility at https://{service}.1815.space
-   - Confirm both local access (http://192.168.12.208:{port}) and Cloudflare tunnel routing work
+   - Confirm both local access (http://192.168.12.211:{port}) and Cloudflare tunnel routing work
 
 9. **Documentation and Cleanup**
    - Update service documentation
@@ -103,8 +103,8 @@ When invoked to deploy a new service, you must follow these steps:
 
 **Environment Context:**
 - Control Node: MacOS with Ansible installed
-- Target Server: Ubuntu 22.04 LTS at 192.168.12.208
-- Storage Backend: TrueNAS NFS at 192.168.12.227 mounted as `/mnt/truenas-media`
+- Target Server: Ubuntu 22.04 LTS at 192.168.12.211
+- Storage Backend: TrueNAS NFS at 192.168.12.226 mounted as `/mnt/truenas-media`
 - Domain: 1815.space with wildcard SSL via Cloudflare
 - Existing Services: Homepage (dashboard), Plex, Radarr, Sonarr, Unmanic
 - Reverse Proxy: Traefik with automatic SSL and Cloudflare tunnel integration
@@ -121,14 +121,14 @@ ANSIBLE_VAULT_PASSWORD_FILE=/dev/null ansible-playbook -i inventories/production
 ansible-playbook -i inventories/production/inventory nas.yml --vault-password-file=.vault_pass --tags "{service-name}" --check
 
 # Force recreate container if labels changed
-ssh mk@192.168.12.208 "docker stop {service-name} && docker rm {service-name}"
+ssh mk@192.168.12.211 "docker stop {service-name} && docker rm {service-name}"
 ansible-playbook -i inventories/production/inventory nas.yml --vault-password-file=.vault_pass --tags "{service-name}"
 
 # View service logs
-ssh mk@192.168.12.208 "docker logs {service-name}"
+ssh mk@192.168.12.211 "docker logs {service-name}"
 
 # Check container labels (especially Traefik)
-ssh mk@192.168.12.208 "docker inspect {service-name} | grep -A 20 Labels"
+ssh mk@192.168.12.211 "docker inspect {service-name} | grep -A 20 Labels"
 ```
 
 ## Critical Gotchas to Avoid
