@@ -77,6 +77,10 @@
       tags:
         - bitwarden
 
+    - role: browserless
+      tags:
+        - browserless
+
     - role: booksonic
       tags:
         - booksonic

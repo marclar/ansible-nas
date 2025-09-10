@@ -323,6 +323,13 @@ nzbget_group_id: "1000"
 n8n_enabled: true
 n8n_available_externally: true
 
+# Browserless - Chrome as a Service (works great with n8n)
+browserless_enabled: true
+browserless_available_externally: false  # Access internally via n8n
+browserless_port: 3333  # Using 3333 to avoid conflicts
+browserless_concurrent: 5  # Reasonable for home use
+browserless_token: "{{ vault_browserless_token | default('BROWSERLESS_TOKEN_CHANGE_ME_123456') }}"
+
 linkace_enabled: false
 linkace_available_externally: false
 linkace_app_key: "base64:/hgyPG7wkojLIu6EkuE2C6F6sig1RA5W+MCFlArrl4g="

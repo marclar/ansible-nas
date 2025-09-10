@@ -1,0 +1,47 @@
+---
+- name: Start Browserless
+  block:
+    - name: Create Browserless Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_user_uid }}"
+        group: "{{ ansible_user_gid }}"
+        mode: '0755'
+      with_items:
+        - "{{ browserless_data_directory }}"
+        - "{{ browserless_data_directory }}/workspace"
+        - "{{ browserless_data_directory }}/downloads"
+
+    - name: Create Browserless Docker Container
+      community.docker.docker_container:
+        name: "{{ browserless_container_name }}"
+        image: "{{ browserless_image }}"
+        pull: true
+        ports:
+          - "{{ browserless_port }}:3000"
+        volumes:
+          - "{{ browserless_data_directory }}/workspace:/tmp/browserless:rw"
+          - "{{ browserless_data_directory }}/downloads:/downloads:rw"
+        env: "{{ browserless_env_vars }}"
+        restart_policy: unless-stopped
+        memory: "{{ browserless_memory }}"
+        shm_size: "2G"
+        labels:
+          traefik.enable: "{{ browserless_available_externally | string }}"
+          traefik.http.routers.browserless.rule: "Host(`{{ browserless_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.browserless.entrypoints: "web"
+          traefik.http.services.browserless.loadbalancer.server.port: "3000"
+          # Add basic auth middleware if needed
+          traefik.http.routers.browserless.middlewares: "browserless-auth"
+          traefik.http.middlewares.browserless-auth.basicauth.users: "{{ browserless_basic_auth_users | default('') }}"
+        state: started
+  when: browserless_enabled is true
+
+- name: Stop Browserless
+  block:
+    - name: Stop Browserless Container
+      community.docker.docker_container:
+        name: "{{ browserless_container_name }}"
+        state: absent
+  when: browserless_enabled is false

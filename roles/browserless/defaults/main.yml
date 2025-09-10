@@ -1,0 +1,38 @@
+---
+# Browserless Chrome Headless Service
+browserless_enabled: false
+
+# Container settings
+browserless_container_name: browserless
+browserless_image: ghcr.io/browserless/chromium
+browserless_port: 3000
+
+# Data directory
+browserless_data_directory: "{{ docker_home }}/browserless"
+
+# Memory and resource limits
+browserless_memory: 2g
+browserless_concurrent: 10
+
+# Authentication token (generate a secure one if not provided)
+browserless_token: "{{ vault_browserless_token | default('CHANGE_ME_SECURE_TOKEN_123456') }}"
+
+# Network settings
+browserless_hostname: browserless
+browserless_available_externally: false
+
+# Additional environment variables
+browserless_env_vars:
+  CONCURRENT: "{{ browserless_concurrent | string }}"
+  TOKEN: "{{ browserless_token | string }}"
+  # Optional advanced settings
+  MAX_QUEUE_LENGTH: "10"
+  TIMEOUT: "30000"
+  WORKSPACE_DIR: "/tmp/browserless"
+  DOWNLOAD_DIR: "/downloads"
+  FUNCTION_ENABLE_INCOGNITO_MODE: "true"
+  ENABLE_CORS: "true"
+  ENABLE_XVBF: "true"
+  CHROME_REFRESH_TIME: "86400000"
+  DEFAULT_BLOCK_ADS: "false"
+  DEFAULT_STEALTH: "false"
